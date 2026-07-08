@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecommerce-backend"
+version = "0.1.0"
+description = "E-commerce Django API"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<6",
+    "djangorestframework>=3.16,<4",
+    "djangorestframework-simplejwt>=5.5,<6",
+    "drf-spectacular>=0.28,<1",
+    "django-cors-headers>=4.7,<5",
+    "django-environ>=0.12,<1",
+    "django-storages[s3]>=1.14,<2",
+    "pillow>=11.0,<12",
+    "psycopg[binary]>=3.2,<4",
+    "redis>=5.2,<6",
+    "django-redis>=5.4,<6",
+    "django-filter>=24.3,<26",
+    "stripe>=11.0,<13",
+    "gunicorn>=23.0,<24",
+    "boto3>=1.35,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.11",
+    "pytest>=8.3",
+    "pytest-django>=4.10",
+]
+
+[tool.setuptools.packages.find]
+include = ["config*", "apps*"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "DJ"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings.py" = ["F405", "E501"]
+"config/settings_test.py" = ["F403"]
+"**/migrations/*.py" = ["E501", "I001"]
+"apps/catalog/filters.py" = ["E501"]
+"apps/cart/views.py" = ["E501"]
+"apps/orders/views.py" = ["E501"]
+"apps/orders/payments/*.py" = ["E501", "I001"]
+"apps/common/email/*.py" = ["E501"]
+"apps/common/demo_data.py" = ["E501"]
+"apps/catalog/admin_serializers.py" = ["E501"]
+"apps/catalog/admin_views.py" = ["E501"]
+"config/urls.py" = ["E501"]
+"apps/orders/models.py" = ["E501"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings_test"
+python_files = ["tests.py", "test_*.py", "*_test.py"]
+pythonpath = ["."]

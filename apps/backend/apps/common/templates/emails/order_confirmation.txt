@@ -1,0 +1,31 @@
+Order Confirmation — {{ site_name }}
+================================================
+
+Hi {{ user.first_name|default:user.email }},
+
+Thank you for your order! We've received it and will process it shortly.
+
+Order #{{ order.id }}
+Status: {{ order.status }}
+Estimated delivery: {{ order.estimated_delivery|date:"F j, Y" }}
+
+Items:
+{% for item in items %}
+- {{ item.product_name }} ({{ item.variant_sku }}) x{{ item.quantity }} — ${{ item.unit_price }}
+{% endfor %}
+
+Subtotal:  ${{ order.subtotal }}
+Shipping:  ${{ order.shipping_cost }}
+Tax:       ${{ order.tax }}
+{% if order.discount %}Discount:  -${{ order.discount }}{% endif %}
+Total:     ${{ order.total }}
+
+Payment status: {{ order.payment.status }}
+
+Shipping to:
+{{ order.shipping_address.line1 }}
+{% if order.shipping_address.line2 %}{{ order.shipping_address.line2 }}{% endif %}
+{{ order.shipping_address.city }}, {{ order.shipping_address.postal_code }}
+{{ order.shipping_address.country }}
+
+Thank you for shopping with us!

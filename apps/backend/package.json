@@ -1,0 +1,13 @@
+{
+  "name": "@ecommerce/backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "python manage.py runserver 0.0.0.0:8000",
+    "lint": "ruff check .",
+    "format": "ruff format .",
+    "test": "pytest",
+    "schema": "python manage.py spectacular --file schema.yaml --validate",
+    "seed": "python manage.py seed_demo"
+  }
+}

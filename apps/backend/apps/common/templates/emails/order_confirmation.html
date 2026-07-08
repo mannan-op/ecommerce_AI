@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: system-ui, sans-serif; color: #1a1a1a; line-height: 1.6;">
+  <h2>Order confirmed — {{ site_name }}</h2>
+  <p>Hi {{ user.first_name|default:user.email }},</p>
+  <p>Thank you for your order! We've received it and will process it shortly.</p>
+  <p><strong>Order #{{ order.id }}</strong><br>
+  Status: {{ order.status }}<br>
+  Estimated delivery: {{ order.estimated_delivery|date:"F j, Y" }}</p>
+  <table cellpadding="8" cellspacing="0" border="1" style="border-collapse:collapse;width:100%;max-width:560px;">
+    <tr><th align="left">Item</th><th>Qty</th><th>Price</th></tr>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.product_name }}<br><small>{{ item.variant_sku }}</small></td>
+      <td align="center">{{ item.quantity }}</td>
+      <td align="right">${{ item.unit_price }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p>
+    Subtotal: ${{ order.subtotal }}<br>
+    Shipping: ${{ order.shipping_cost }}<br>
+    Tax: ${{ order.tax }}<br>
+    {% if order.discount %}Discount: -${{ order.discount }}<br>{% endif %}
+    <strong>Total: ${{ order.total }}</strong>
+  </p>
+  <p>Payment status: <strong>{{ order.payment.status }}</strong></p>
+  <p>Shipping to:<br>
+    {{ order.shipping_address.line1 }}<br>
+    {% if order.shipping_address.line2 %}{{ order.shipping_address.line2 }}<br>{% endif %}
+    {{ order.shipping_address.city }}, {{ order.shipping_address.postal_code }}<br>
+    {{ order.shipping_address.country }}
+  </p>
+</body>
+</html>
