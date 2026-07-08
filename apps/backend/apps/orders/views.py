@@ -188,7 +188,7 @@ class OrderViewSet(
         try:
             order = (
                 Order.objects.select_for_update()
-                .select_related("payment", "shipping_address")
+                .select_related("shipping_address")
                 .get(pk=order_id, user=request.user)
             )
         except Order.DoesNotExist as exc:
@@ -196,7 +196,13 @@ class OrderViewSet(
                 "Order not found.", code="NOT_FOUND", status_code=404
             ) from exc
 
-        payment = order.payment
+        try:
+            payment = Payment.objects.select_for_update().get(order=order)
+        except Payment.DoesNotExist as exc:
+            raise BusinessError(
+                "Payment not found.", code="NOT_FOUND", status_code=404
+            ) from exc
+
         if payment.status == Payment.Status.PAID:
             return Response(
                 {"order": OrderSerializer(order).data, "already_paid": True}
