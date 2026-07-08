@@ -1,3 +1,5 @@
+import "../admin.css";
+
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -21,7 +23,10 @@ export default async function AdminLayout({
 
   const user = await serverApi.getCurrentUser(accessToken);
   if (!user?.is_staff) {
-    redirect("/");
+    if (user) {
+      redirect("/access-denied");
+    }
+    redirect("/login?redirect=/admin");
   }
 
   return <AdminShell>{children}</AdminShell>;

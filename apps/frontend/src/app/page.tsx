@@ -1,65 +1,96 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { ProductGrid } from "@/components/product/ProductGrid";
-import type { Category, ProductList } from "@/lib/api/types";
+import { BrandStory } from "@/components/home/BrandStory";
+import { FAQ } from "@/components/home/FAQ";
+import { FeaturedCollections } from "@/components/home/FeaturedCollections";
+import { HeroSection } from "@/components/home/HeroSection";
+import { InstagramGallery } from "@/components/home/InstagramGallery";
+import { NewsletterSection } from "@/components/home/NewsletterSection";
+import { ProductShowcase } from "@/components/home/ProductShowcase";
+import { SeasonalBanner } from "@/components/home/SeasonalBanner";
+import { Testimonials } from "@/components/home/Testimonials";
 import { serverApi } from "@/lib/api/server";
 
 export const metadata: Metadata = {
-  title: "Shop the latest collection",
-  description: "Discover quality products with modern style and craftsmanship.",
+  title: "Luxury fashion for the modern wardrobe",
+  description:
+    "Discover curated Pakistani luxury fashion — lawn, silk, and artisanal pret collections.",
 };
 
 export default async function HomePage() {
-  let products: ProductList[] = [];
-  let categories: Category[] = [];
+  let products: Awaited<ReturnType<typeof serverApi.getProducts>>["results"] = [];
+  let categories: Awaited<ReturnType<typeof serverApi.getCategories>> = [];
   let error: string | null = null;
 
   try {
-    [products, categories] = await Promise.all([
-      serverApi.getProducts().then((r) => r.results),
+    const [productResult, cats] = await Promise.all([
+      serverApi.getProducts({ ordering: "-newest" }),
       serverApi.getCategories(),
     ]);
+    products = productResult.results;
+    categories = cats;
   } catch {
-    error =
-      "Could not reach the API. Start the Django backend with docker compose up.";
+    try {
+      categories = await serverApi.getCategories();
+    } catch {
+      error =
+        "Could not reach the API. Start the Django backend with docker compose up.";
+    }
+    if (!error) {
+      try {
+        const productResult = await serverApi.getProducts();
+        products = productResult.results;
+      } catch {
+        error =
+          "Could not load products. Check that the API is running and seeded.";
+      }
+    }
   }
 
+  const newArrivals = products.slice(0, 8);
+  const trending = [...products].reverse().slice(0, 8);
+  const bestSellers = products.slice(2, 10);
+
   return (
-    <div className="container page">
-      <section className="hero">
-        <h1>Curated for modern living</h1>
-        <p>
-          Quality fabrics, thoughtful design, and seamless shopping — powered by
-          our Django + Next.js stack.
-        </p>
-      </section>
+    <>
+      <HeroSection />
 
       {categories.length > 0 ? (
-        <section className="section">
-          <h2>Shop by category</h2>
-          <div className="category-pills">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/categories/${cat.slug}`}
-                className="category-pill"
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </div>
-        </section>
+        <FeaturedCollections categories={categories} />
       ) : null}
 
-      <section className="section">
-        <h2>Featured products</h2>
-        {error ? (
-          <p className="notice">{error}</p>
-        ) : (
-          <ProductGrid products={products} />
-        )}
-      </section>
-    </div>
+      {error ? (
+        <div className="container-luxury py-8 text-center text-sm text-error">
+          {error}
+        </div>
+      ) : (
+        <>
+          <ProductShowcase
+            title="New arrivals"
+            subtitle="Just landed"
+            products={newArrivals}
+            viewAllHref="/shop?ordering=-newest"
+            badge="New"
+          />
+          <SeasonalBanner />
+          <ProductShowcase
+            title="Trending now"
+            subtitle="Most loved"
+            products={trending}
+          />
+          <ProductShowcase
+            title="Best sellers"
+            subtitle="Client favourites"
+            products={bestSellers}
+          />
+        </>
+      )}
+
+      <BrandStory />
+      <Testimonials />
+      <InstagramGallery products={products} />
+      <NewsletterSection />
+      <FAQ />
+    </>
   );
 }

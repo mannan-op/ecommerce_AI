@@ -3,6 +3,8 @@
 import type { ProductVariant } from "@/lib/api/types";
 import { useMemo, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 interface VariantSelectorProps {
   variants: ProductVariant[];
   onSelect: (variant: ProductVariant) => void;
@@ -32,19 +34,26 @@ export function VariantSelector({ variants, onSelect }: VariantSelectorProps) {
     ) ?? activeVariants.find((v) => v.color === color);
 
   if (!activeVariants.length) {
-    return <p className="notice">This product is currently unavailable.</p>;
+    return <p className="text-sm text-muted">This product is currently unavailable.</p>;
   }
 
   return (
-    <div className="variant-selector">
-      <div className="variant-group">
-        <span className="variant-label">Color</span>
-        <div className="variant-options">
+    <div className="space-y-5">
+      <div>
+        <span className="text-xs font-medium uppercase tracking-wider text-muted">
+          Color
+        </span>
+        <div className="mt-2 flex flex-wrap gap-2">
           {colors.map((c) => (
             <button
               key={c}
               type="button"
-              className={`variant-chip ${c === color ? "active" : ""}`}
+              className={cn(
+                "rounded-2xl border px-4 py-2 text-sm capitalize transition-all",
+                c === color
+                  ? "border-accent bg-accent/10 text-foreground"
+                  : "border-border hover:border-accent/50"
+              )}
               onClick={() => {
                 setColor(c);
                 setSize("");
@@ -59,14 +68,21 @@ export function VariantSelector({ variants, onSelect }: VariantSelectorProps) {
       </div>
 
       {sizesForColor.length > 0 ? (
-        <div className="variant-group">
-          <span className="variant-label">Size</span>
-          <div className="variant-options">
+        <div>
+          <span className="text-xs font-medium uppercase tracking-wider text-muted">
+            Size
+          </span>
+          <div className="mt-2 flex flex-wrap gap-2">
             {sizesForColor.map((s) => (
               <button
                 key={s}
                 type="button"
-                className={`variant-chip ${s === size ? "active" : ""}`}
+                className={cn(
+                  "min-w-[3rem] rounded-2xl border px-4 py-2 text-sm transition-all",
+                  s === size
+                    ? "border-primary bg-primary text-background"
+                    : "border-border hover:border-accent/50"
+                )}
                 onClick={() => {
                   setSize(s);
                   const match = activeVariants.find(
@@ -83,7 +99,16 @@ export function VariantSelector({ variants, onSelect }: VariantSelectorProps) {
       ) : null}
 
       {selected ? (
-        <p className="variant-price">${selected.price}</p>
+        <div className="flex items-center justify-between text-sm">
+          <p className="text-2xl font-display">${selected.price}</p>
+          <p className="text-muted">
+            {selected.stock_quantity > 0 ? (
+              <span className="text-success">{selected.stock_quantity} in stock</span>
+            ) : (
+              <span className="text-error">Out of stock</span>
+            )}
+          </p>
+        </div>
       ) : null}
     </div>
   );

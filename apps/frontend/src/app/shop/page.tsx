@@ -3,12 +3,13 @@ import { Suspense } from "react";
 
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { ProductFilters } from "@/components/search/ProductFilters";
+import { Reveal } from "@/components/motion/Reveal";
 import { Pagination } from "@/components/ui/Pagination";
 import { serverApi } from "@/lib/api/server";
 
 export const metadata: Metadata = {
-  title: "Shop",
-  description: "Search and filter our product catalog",
+  title: "Shop all",
+  description: "Browse our complete luxury fashion collection",
 };
 
 interface ShopPageProps {
@@ -43,19 +44,21 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       ordering: params.ordering,
     });
   } catch {
-    // API unavailable — show empty shop with message below
+    // API unavailable
   }
 
   const fabrics = ["cotton", "linen", "silk", "wool", "polyester", "lawn", "khaddar"];
 
   return (
-    <div className="container page shop-page">
-      <header className="page-header">
-        <h1>Shop</h1>
-        <p>{result.count} products found</p>
-      </header>
-      <div className="shop-layout">
-        <Suspense fallback={<div className="filters-panel" />}>
+    <div className="container-luxury py-10 lg:py-16">
+      <Reveal>
+        <p className="text-xs uppercase tracking-[0.3em] text-accent">Collection</p>
+        <h1 className="heading-display mt-2 text-4xl lg:text-5xl">Shop all</h1>
+        <p className="mt-2 text-muted">{result.count} pieces curated for you</p>
+      </Reveal>
+
+      <div className="mt-10 grid gap-10 lg:grid-cols-[280px_1fr]">
+        <Suspense fallback={<div className="h-96 rounded-3xl bg-surface-elevated" />}>
           <ProductFilters
             categories={categories.map((c) => ({
               slug: c.slug,
@@ -64,22 +67,26 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
             fabrics={fabrics}
           />
         </Suspense>
-        <div className="shop-results">
+
+        <div>
           {result.count === 0 && categories.length === 0 ? (
-            <p className="notice">
+            <p className="rounded-3xl border border-dashed border-border py-16 text-center text-muted">
               Could not load products. Make sure the API is running.
             </p>
-          ) : null}
-          <ProductGrid
-            products={result.results}
-            emptyMessage="No products match your filters."
-          />
-          <Pagination
-            page={result.page}
-            totalPages={result.totalPages}
-            basePath="/shop"
-            searchParams={params}
-          />
+          ) : (
+            <>
+              <ProductGrid
+                products={result.results}
+                emptyMessage="No products match your filters."
+              />
+              <Pagination
+                page={result.page}
+                totalPages={result.totalPages}
+                basePath="/shop"
+                searchParams={params}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -31,18 +31,17 @@ export function DemoPaymentStep({
   }
 
   return (
-    <div className="demo-payment">
-      <div className="demo-payment-banner">
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-accent/30 bg-accent/10 p-4">
         <strong>Demo Payment Mode</strong>
-        <p>
-          No real charges. This simulates a successful payment for development and
-          testing.
+        <p className="mt-1 text-sm text-muted">
+          No real charges. Simulates a successful payment for development.
         </p>
       </div>
-      <p className="demo-payment-amount">
-        Total due: <strong>${amount}</strong>
+      <p className="text-lg">
+        Total due: <strong className="font-display text-2xl">${amount}</strong>
       </p>
-      <Button type="button" fullWidth loading={loading} onClick={handlePay}>
+      <Button type="button" variant="accent" fullWidth loading={loading} onClick={handlePay}>
         Pay with Demo Mode
       </Button>
     </div>

@@ -9,6 +9,7 @@ import type {
   PaginatedOrderList,
   RegisterRequest,
   TokenObtainPairRequest,
+  ProductDetail,
   User,
 } from "./types";
 import { browserClient } from "./browser";
@@ -90,5 +91,10 @@ export const api = {
       browserClient.get<PaginatedAddressList>("/proxy/accounts/addresses/"),
     create: (data: AddressRequest) =>
       browserClient.post<Address>("/proxy/accounts/addresses/", data),
+  },
+
+  products: {
+    getBySlug: (slug: string) =>
+      browserClient.get<ProductDetail>(`/proxy/catalog/products/${slug}/`),
   },
 };

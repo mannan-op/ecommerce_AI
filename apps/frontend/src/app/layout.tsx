@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { serverApi } from "@/lib/api/server";
 
 import "./globals.css";
 
@@ -17,27 +19,43 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const display = Cormorant_Garamond({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "E-Commerce AI",
-    template: "%s | E-Commerce AI",
+    default: "MAISON — Luxury Fashion",
+    template: "%s | MAISON",
   },
-  description: "Modern ecommerce with AI-powered shopping experiences",
+  description:
+    "Premium Pakistani luxury fashion — curated collections, artisanal fabrics, and timeless design.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let categories: Awaited<ReturnType<typeof serverApi.getCategories>> = [];
+  try {
+    categories = await serverApi.getCategories();
+  } catch {
+    // API offline
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable}`}
+        className={`${geistSans.variable} ${geistMono.variable} ${display.variable} antialiased`}
         suppressHydrationWarning
       >
-        <AppShell>{children}</AppShell>
+        <ThemeProvider>
+          <AppShell categories={categories}>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );

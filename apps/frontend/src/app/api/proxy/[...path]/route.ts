@@ -85,6 +85,17 @@ async function proxyRequest(
       body,
     });
 
+    if (djangoResponse.status === 204 || djangoResponse.status === 205) {
+      const response = new NextResponse(null, { status: djangoResponse.status });
+      if (access && access !== cookieStore.get(ACCESS_TOKEN_COOKIE)?.value) {
+        response.cookies.set(ACCESS_TOKEN_COOKIE, access, {
+          ...COOKIE_OPTIONS,
+          maxAge: ACCESS_TOKEN_MAX_AGE,
+        });
+      }
+      return response;
+    }
+
     const contentType = djangoResponse.headers.get("content-type") ?? "";
     const responseData = contentType.includes("application/json")
       ? await djangoResponse.json()

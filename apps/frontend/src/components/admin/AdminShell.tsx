@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { LogoutButton } from "@/components/layout/Header";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", exact: true },

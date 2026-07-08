@@ -2,6 +2,7 @@ import axios from "axios";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { createDjangoClient } from "@/lib/api/django";
+import { ApiError } from "@/lib/api/types";
 import {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_MAX_AGE,
@@ -60,6 +61,12 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        error.data ?? { detail: error.message },
+        { status: error.status }
+      );
+    }
     if (axios.isAxiosError(error)) {
       return NextResponse.json(error.response?.data ?? { detail: "Login failed" }, {
         status: error.response?.status ?? 401,

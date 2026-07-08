@@ -122,34 +122,44 @@ export function CheckoutWizard() {
   }
 
   if (!mounted || displayItems.length === 0) {
-    return <p className="muted">Redirecting to cart…</p>;
+    return <p className="text-muted">Redirecting to cart…</p>;
   }
 
   return (
-    <div className="checkout-wizard">
-      <nav className="checkout-steps" aria-label="Checkout progress">
+    <div className="space-y-8">
+      <nav
+        className="flex flex-wrap gap-3"
+        aria-label="Checkout progress"
+      >
         {STEPS.map((s, i) => (
           <span
             key={s}
-            className={`checkout-step ${step === s ? "active" : ""} ${
-              STEPS.indexOf(step) > i ? "done" : ""
+            className={`rounded-full px-4 py-2 text-xs uppercase tracking-wider transition-colors ${
+              step === s
+                ? "bg-primary text-background"
+                : STEPS.indexOf(step) > i
+                  ? "bg-accent/20 text-accent"
+                  : "bg-surface-elevated text-muted"
             }`}
           >
-            {i + 1}. {s.charAt(0).toUpperCase() + s.slice(1)}
+            {i + 1}. {s}
           </span>
         ))}
       </nav>
 
-      {error ? <p className="error-message">{error}</p> : null}
+      {error ? <p className="text-sm text-error">{error}</p> : null}
 
-      <div className="checkout-wizard-body">
+      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
         {step === "address" ? (
-          <div className="checkout-main">
+          <div className="space-y-6 rounded-3xl border border-border bg-surface p-6">
             {addresses.length > 0 ? (
-              <div className="address-list">
-                <h2>Saved addresses</h2>
+              <div className="space-y-4">
+                <h2 className="font-display text-2xl">Saved addresses</h2>
                 {addresses.map((addr) => (
-                  <label key={addr.id} className="address-card">
+                  <label
+                    key={addr.id}
+                    className="flex cursor-pointer gap-4 rounded-2xl border border-border p-4 transition-colors has-[:checked]:border-accent"
+                  >
                     <input
                       type="radio"
                       name="address"
@@ -158,7 +168,7 @@ export function CheckoutWizard() {
                     />
                     <div>
                       <strong>{addr.label}</strong>
-                      <p>
+                      <p className="text-sm text-muted">
                         {addr.line1}, {addr.city} {addr.postal_code}
                       </p>
                     </div>
@@ -181,8 +191,8 @@ export function CheckoutWizard() {
         ) : null}
 
         {step === "summary" ? (
-          <div className="checkout-main">
-            <h2>Review your order</h2>
+          <div className="space-y-4 rounded-3xl border border-border bg-surface p-6">
+            <h2 className="font-display text-2xl">Review your order</h2>
             <Button
               onClick={handleProceedToPayment}
               fullWidth
@@ -197,8 +207,8 @@ export function CheckoutWizard() {
         ) : null}
 
         {step === "payment" ? (
-          <div className="checkout-main">
-            <h2>Payment</h2>
+          <div className="space-y-4 rounded-3xl border border-border bg-surface p-6">
+            <h2 className="font-display text-2xl">Payment</h2>
             {paymentProvider === "demo" ? (
               <DemoPaymentStep
                 amount={preview?.total ?? localSubtotal.toFixed(2)}
@@ -212,7 +222,7 @@ export function CheckoutWizard() {
                 onError={setError}
               />
             ) : (
-              <p className="error-message">
+              <p className="text-sm text-error">
                 Payment could not be initialized. Check Stripe configuration or go
                 back and try again.
               </p>

@@ -2,6 +2,9 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+
 interface ProductFiltersProps {
   categories: Array<{ slug: string; name: string }>;
   fabrics?: string[];
@@ -20,28 +23,27 @@ export function ProductFilters({ categories, fabrics = [] }: ProductFiltersProps
   }
 
   return (
-    <aside className="filters-panel">
-      <h2>Filters</h2>
+    <aside className="space-y-6 rounded-3xl border border-border bg-surface p-6 shadow-soft lg:sticky lg:top-28 lg:self-start">
+      <h2 className="font-display text-xl">Filters</h2>
 
-      <label className="filter-group">
-        <span>Search</span>
-        <input
-          type="search"
-          className="field-input"
-          placeholder="Search products…"
-          defaultValue={searchParams.get("search") ?? ""}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              update("search", (e.target as HTMLInputElement).value);
-            }
-          }}
-        />
-      </label>
+      <Input
+        label="Search"
+        type="search"
+        placeholder="Search products…"
+        defaultValue={searchParams.get("search") ?? ""}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            update("search", (e.target as HTMLInputElement).value);
+          }
+        }}
+      />
 
-      <label className="filter-group">
-        <span>Category</span>
+      <div className="space-y-2">
+        <label className="text-xs font-medium uppercase tracking-wider text-muted">
+          Category
+        </label>
         <select
-          className="field-input"
+          className="h-12 w-full rounded-2xl border border-border bg-surface-elevated px-4 text-sm focus:border-accent focus:outline-none"
           value={searchParams.get("category") ?? ""}
           onChange={(e) => update("category", e.target.value)}
         >
@@ -52,12 +54,14 @@ export function ProductFilters({ categories, fabrics = [] }: ProductFiltersProps
             </option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label className="filter-group">
-        <span>Fabric</span>
+      <div className="space-y-2">
+        <label className="text-xs font-medium uppercase tracking-wider text-muted">
+          Fabric
+        </label>
         <select
-          className="field-input"
+          className="h-12 w-full rounded-2xl border border-border bg-surface-elevated px-4 text-sm focus:border-accent focus:outline-none"
           value={searchParams.get("fabric") ?? ""}
           onChange={(e) => update("fabric", e.target.value)}
         >
@@ -68,32 +72,34 @@ export function ProductFilters({ categories, fabrics = [] }: ProductFiltersProps
             </option>
           ))}
         </select>
-      </label>
-
-      <div className="filter-row">
-        <label className="filter-group">
-          <span>Min price</span>
-          <input
-            type="number"
-            className="field-input"
-            min={0}
-            placeholder="0"
-            defaultValue={searchParams.get("min_price") ?? ""}
-            onBlur={(e) => update("min_price", e.target.value)}
-          />
-        </label>
-        <label className="filter-group">
-          <span>Max price</span>
-          <input
-            type="number"
-            className="field-input"
-            min={0}
-            placeholder="999"
-            defaultValue={searchParams.get("max_price") ?? ""}
-            onBlur={(e) => update("max_price", e.target.value)}
-          />
-        </label>
       </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Min price"
+          type="number"
+          min={0}
+          placeholder="0"
+          defaultValue={searchParams.get("min_price") ?? ""}
+          onBlur={(e) => update("min_price", e.target.value)}
+        />
+        <Input
+          label="Max price"
+          type="number"
+          min={0}
+          placeholder="999"
+          defaultValue={searchParams.get("max_price") ?? ""}
+          onBlur={(e) => update("max_price", e.target.value)}
+        />
+      </div>
+
+      <Button
+        variant="ghost"
+        fullWidth
+        onClick={() => router.push("/shop")}
+      >
+        Clear filters
+      </Button>
     </aside>
   );
 }

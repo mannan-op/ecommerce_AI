@@ -5,13 +5,16 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { api } from "@/lib/api";
 import { ApiError } from "@/lib/api/types";
+import type { StaffUser } from "@/lib/api/types";
 import { useCartStore } from "@/lib/cart/store";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setUser } = useAuth();
   const mergeWithBackend = useCartStore((s) => s.mergeWithBackend);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,10 +26,11 @@ export function LoginForm() {
     setLoading(true);
     setError("");
     try {
-      await api.auth.login({
+      const { data } = await api.auth.login({
         email,
         password,
       });
+      setUser(data.user as StaffUser);
       await mergeWithBackend();
       const redirect = searchParams.get("redirect") ?? "/";
       router.push(redirect);
@@ -43,8 +47,8 @@ export function LoginForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <h1>Sign in</h1>
+    <form className="space-y-5" onSubmit={handleSubmit}>
+      <h1 className="heading-display text-center text-3xl">Sign in</h1>
       <Input
         label="Email"
         type="email"
@@ -61,7 +65,7 @@ export function LoginForm() {
         required
         autoComplete="current-password"
       />
-      {error ? <p className="error-message">{error}</p> : null}
+      {error ? <p className="text-sm text-error">{error}</p> : null}
       <Button type="submit" fullWidth loading={loading}>
         Sign in
       </Button>
@@ -71,6 +75,7 @@ export function LoginForm() {
 
 export function RegisterForm() {
   const router = useRouter();
+  const { setUser } = useAuth();
   const mergeWithBackend = useCartStore((s) => s.mergeWithBackend);
   const [form, setForm] = useState({
     email: "",
@@ -87,10 +92,11 @@ export function RegisterForm() {
     setError("");
     try {
       await api.auth.register(form);
-      await api.auth.login({
+      const { data } = await api.auth.login({
         email: form.email,
         password: form.password,
       });
+      setUser(data.user as StaffUser);
       await mergeWithBackend();
       router.push("/");
       router.refresh();
@@ -106,8 +112,8 @@ export function RegisterForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <h1>Create account</h1>
+    <form className="space-y-5" onSubmit={handleSubmit}>
+      <h1 className="heading-display text-center text-3xl">Create account</h1>
       <Input
         label="Email"
         type="email"
@@ -133,7 +139,7 @@ export function RegisterForm() {
         value={form.last_name}
         onChange={(e) => setForm({ ...form, last_name: e.target.value })}
       />
-      {error ? <p className="error-message">{error}</p> : null}
+      {error ? <p className="text-sm text-error">{error}</p> : null}
       <Button type="submit" fullWidth loading={loading}>
         Create account
       </Button>
