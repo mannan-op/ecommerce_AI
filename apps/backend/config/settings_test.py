@@ -15,6 +15,10 @@ CACHES = {
     }
 }
 
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+DEFAULT_TRYON_PROVIDER = "demo"
+
 USE_S3 = False
 STORAGES = {
     "default": {

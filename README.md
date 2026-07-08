@@ -12,7 +12,7 @@ packages/
   types/       TypeScript types generated from OpenAPI schema
 ```
 
-Phase 2/3 apps (`tryon`, `notifications`) are not scaffolded yet. Redis is wired in Django settings for future use.
+Phase 2 adds **virtual try-on** (upload photo → AI preview) and **stylist CSR handoff**. Redis + Celery process try-on jobs asynchronously.
 
 ## Prerequisites
 
@@ -182,7 +182,69 @@ Public config endpoint: `GET /api/orders/payments/config/`
 | Frontend unit tests | ❌ Not implemented |
 | Address book CRUD UI | ❌ API only |
 
-**Verification (latest audit):** 25 backend tests passing, ESLint clean, `next build` succeeds with zero TypeScript errors.
+**Verification (latest audit):** 29 backend tests passing, ESLint clean, `next build` succeeds with zero TypeScript errors.
+
+## Virtual try-on (Phase 2)
+
+Customers can open **Virtual try-on** on any product page, upload a photo (with consent), and receive an AI-generated preview. Staff can manage stylist follow-ups from the admin panel.
+
+| Variable | App | Default | Description |
+|----------|-----|---------|-------------|
+| `DEFAULT_TRYON_PROVIDER` | Django | `auto` | `auto`, `fal`, `replicate`, or `demo` |
+| `FAL_KEY` | Django | — | **Recommended** — Fal.ai key for FASHN v1.6 VTON |
+| `TRYON_FAL_MODEL` | Django | `fal-ai/fashn/tryon/v1.6` | Fal virtual try-on model |
+| `TRYON_FAL_MODE` | Django | `balanced` | `performance`, `balanced`, or `quality` |
+| `REPLICATE_API_TOKEN` | Django | — | Fallback — Replicate IDM-VTON |
+| `TRYON_REPLICATE_MODEL` | Django | `cuuupid/idm-vton` | Replicate model slug |
+| `TRYON_SYNC_PROCESSING` | Django | `False` | Process jobs inline (no Celery worker) |
+| `TRYON_PHOTO_RETENTION_DAYS` | Django | `30` | User photo retention window |
+| `CELERY_BROKER_URL` | Django/Celery | `REDIS_URL` | Job queue broker |
+
+**Enable real AI try-on (recommended):**
+
+1. Create a free account at [fal.ai](https://fal.ai) and copy your API key.
+2. Add to `apps/backend/.env`:
+
+```env
+FAL_KEY=your_fal_api_key_here
+DEFAULT_TRYON_PROVIDER=auto
+```
+
+With `auto`, the backend picks **Fal (FASHN v1.6)** when `FAL_KEY` is set, else Replicate if token is set, else demo overlay.
+
+> Virtual try-on uses **vision/image models** (VTON), not text LLMs. FASHN and IDM-VTON are purpose-built for fitting clothes onto photos.
+
+**Try-on flow:**
+1. Sign in and open a product → **Virtual try-on**
+2. Select variant, upload photo, accept consent
+3. `POST /api/tryon/jobs/` creates a job; Celery worker runs the provider
+4. Frontend polls `GET /api/tryon/jobs/{id}/` until `completed` or `failed`
+5. Optional: **Speak with a stylist** → `POST /api/tryon/csr/`
+
+**Staff:** http://localhost:3000/admin/tryon — stylist queue with status + notes (`PATCH /api/admin/tryon/csr/{id}/`).
+
+**Docker:** `docker compose up` starts `backend`, `celery`, `redis`, `db`, and `minio`. Run migrations after pull:
+
+```bash
+docker compose exec backend python manage.py migrate
+```
+
+**Privacy:** User photos are stored in private media (`tryon/user-photos/`). Demo mode composites locally; production should use `replicate` or another commercial VTON API. Photos are purged after `TRYON_PHOTO_RETENTION_DAYS` (purge task can be scheduled via Celery beat in production).
+
+## Feature checklist (Phase 2)
+
+| Feature | Status |
+|---------|--------|
+| Try-on job API (upload, poll, list) | ✅ Complete |
+| Demo try-on provider (no API key) | ✅ Fallback only |
+| Fal.ai FASHN v1.6 provider | ✅ Complete (requires FAL_KEY) |
+| Replicate IDM-VTON provider | ✅ Complete (requires token) |
+| Celery async processing | ✅ Complete |
+| Product page try-on UI | ✅ Complete |
+| CSR stylist handoff | ✅ Complete |
+| Admin stylist queue | ✅ Complete |
+| Photo consent + retention setting | ✅ Complete |
+| Push/in-app notifications | ❌ Phase 3 |
 
 ## API overview
 
@@ -200,13 +262,17 @@ Public config endpoint: `GET /api/orders/payments/config/`
 | `POST /api/orders/payments/confirm/` | Confirm payment (demo or Stripe) |
 | `GET /api/orders/payments/config/` | Active payment provider config |
 | `GET /api/accounts/addresses/` | User shipping addresses |
+| `POST /api/tryon/jobs/` | Create virtual try-on job (multipart) |
+| `GET /api/tryon/jobs/{id}/` | Poll try-on job status + result |
+| `POST /api/tryon/csr/` | Request stylist follow-up |
+| `GET /api/admin/tryon/csr/` | Staff stylist queue |
 
 ## Models
 
 - **Catalog**: `Category`, `Product`, `ProductVariant` (fabric, color, size), `ProductImage`
 - **Cart**: `Cart` (user or session), `CartItem` (variant-based)
 - **Orders**: `Order`, `OrderItem`, `Address`, `Payment` (pending/paid/failed)
-- **Accounts**: custom `User` (email login), `Address`
+- **Try-on**: `TryOnJob` (user photo, result, status), `CSRHandoff` (stylist requests)
 
 Product images are stored in S3-compatible storage (MinIO locally via Docker).
 

@@ -24,6 +24,7 @@ from apps.catalog.admin_views import (
 )
 from apps.catalog.views import CategoryViewSet, ProductViewSet
 from apps.orders.views import OrderViewSet
+from apps.tryon.views import AdminCSRHandoffViewSet, CSRHandoffViewSet, TryOnJobViewSet
 
 router = DefaultRouter()
 router.register("catalog/categories", CategoryViewSet, basename="category")
@@ -35,6 +36,9 @@ router.register("admin/catalog/categories", AdminCategoryViewSet, basename="admi
 router.register("admin/catalog/products", AdminProductViewSet, basename="admin-product")
 router.register("admin/catalog/variants", AdminVariantViewSet, basename="admin-variant")
 router.register("admin/catalog/images", AdminProductImageViewSet, basename="admin-image")
+router.register("tryon/jobs", TryOnJobViewSet, basename="tryon-job")
+router.register("tryon/csr", CSRHandoffViewSet, basename="tryon-csr")
+router.register("admin/tryon/csr", AdminCSRHandoffViewSet, basename="admin-tryon-csr")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

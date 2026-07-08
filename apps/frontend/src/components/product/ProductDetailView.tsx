@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Heart, Star, Truck } from "lucide-react";
 
 import { AddToCartSection } from "@/components/product/AddToCartButton";
+import { TryOnButton } from "@/components/tryon/TryOnButton";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
@@ -104,8 +105,9 @@ export function ProductDetailView({ product, related }: ProductDetailViewProps) 
               Free shipping on orders over $75 · Est. 5 days
             </div>
 
-            <div className="mt-8 rounded-3xl border border-border bg-surface-elevated/50 p-6">
+            <div className="mt-8 space-y-3 rounded-3xl border border-border bg-surface-elevated/50 p-6">
               <AddToCartSection product={product} />
+              <TryOnButton product={product} />
             </div>
 
             <details className="mt-6 rounded-2xl border border-border px-4 py-3">

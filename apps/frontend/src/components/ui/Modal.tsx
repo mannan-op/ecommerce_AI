@@ -12,7 +12,9 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
-  size?: "md" | "lg" | "xl";
+  size?: "md" | "lg" | "xl" | "studio";
+  noPadding?: boolean;
+  scrollable?: boolean;
 }
 
 export function Modal({
@@ -22,6 +24,8 @@ export function Modal({
   children,
   className,
   size = "lg",
+  noPadding = false,
+  scrollable = true,
 }: ModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -39,7 +43,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
           <motion.button
             type="button"
             aria-label="Close overlay"
@@ -54,10 +58,12 @@ export function Modal({
             aria-modal="true"
             aria-labelledby={title ? "modal-title" : undefined}
             className={cn(
-              "relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-3xl border border-border/60 bg-surface shadow-elevated",
+              "relative z-10 flex w-full flex-col overflow-hidden rounded-t-3xl border border-border/60 bg-surface shadow-elevated sm:max-h-[90vh] sm:rounded-3xl",
+              "max-h-[92dvh]",
               size === "md" && "max-w-md",
               size === "lg" && "max-w-2xl",
               size === "xl" && "max-w-4xl",
+              size === "studio" && "max-w-6xl",
               className
             )}
             initial={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -79,7 +85,15 @@ export function Modal({
                 </button>
               </div>
             ) : null}
-            <div className="p-6">{children}</div>
+            <div
+              className={cn(
+                "min-h-0 flex-1",
+                scrollable ? "overflow-y-auto" : "flex flex-col overflow-hidden",
+                !noPadding && "p-6"
+              )}
+            >
+              {children}
+            </div>
           </motion.div>
         </div>
       ) : null}

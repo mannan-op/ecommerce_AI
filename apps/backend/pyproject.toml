@@ -23,6 +23,10 @@ dependencies = [
     "stripe>=11.0,<13",
     "gunicorn>=23.0,<24",
     "boto3>=1.35,<2",
+    "celery>=5.4,<6",
+    "gradio-client>=1.4,<3",
+    "fal-client>=0.5,<1",
+    "replicate>=1.0,<2",
 ]
 
 [project.optional-dependencies]
@@ -56,6 +60,13 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "DJ"]
 "apps/catalog/admin_views.py" = ["E501"]
 "config/urls.py" = ["E501"]
 "apps/orders/models.py" = ["E501"]
+"apps/tryon/services/providers/demo.py" = ["S310"]
+"apps/tryon/services/providers/replicate.py" = ["E501"]
+"apps/tryon/services/providers/huggingface.py" = ["E501"]
+"apps/tryon/services/media.py" = ["S310"]
+"apps/tryon/tasks.py" = ["E501"]
+"apps/tryon/views.py" = ["E501"]
+"apps/tryon/serializers.py" = ["E501"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings_test"

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.cart",
     "apps.orders",
+    "apps.tryon",
 ]
 
 MIDDLEWARE = [
@@ -230,6 +231,34 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@ecommerce.local")
 SITE_NAME = env("SITE_NAME", default="E-Commerce AI")
 
+# Celery (async try-on jobs)
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default=REDIS_URL)
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=REDIS_URL)
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 900
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# Virtual try-on — auto picks free HF → paid Fal/Replicate → demo
+DEFAULT_TRYON_PROVIDER = env("DEFAULT_TRYON_PROVIDER", default="auto")
+TRYON_PREFER_FREE = env.bool("TRYON_PREFER_FREE", default=True)
+HF_TOKEN = env("HF_TOKEN", default="").strip()
+TRYON_HF_SPACE = env("TRYON_HF_SPACE", default="yisol/IDM-VTON")
+FAL_KEY = env("FAL_KEY", default="").strip()
+TRYON_FAL_MODEL = env("TRYON_FAL_MODEL", default="fal-ai/fashn/tryon/v1.6")
+TRYON_FAL_MODE = env("TRYON_FAL_MODE", default="balanced")
+REPLICATE_API_TOKEN = env("REPLICATE_API_TOKEN", default="").strip()
+TRYON_REPLICATE_MODEL = env(
+    "TRYON_REPLICATE_MODEL",
+    default="cuuupid/idm-vton",
+)
+TRYON_PHOTO_RETENTION_DAYS = env.int("TRYON_PHOTO_RETENTION_DAYS", default=30)
+TRYON_SYNC_PROCESSING = env.bool("TRYON_SYNC_PROCESSING", default=False)
+
+if TRYON_SYNC_PROCESSING:
+    CELERY_TASK_ALWAYS_EAGER = True
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -239,7 +268,7 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "E-Commerce AI API",
-    "DESCRIPTION": "REST API for catalog, cart, orders, and accounts.",
+    "DESCRIPTION": "REST API for catalog, cart, orders, accounts, and try-on.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,

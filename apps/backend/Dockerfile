@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml .
+COPY apps ./apps
+COPY config ./config
+COPY manage.py .
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir ".[dev]"
 
 COPY . .

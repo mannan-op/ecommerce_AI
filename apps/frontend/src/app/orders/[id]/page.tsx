@@ -27,7 +27,7 @@ function formatAddress(addr: {
   line2?: string;
   city: string;
   postal_code: string;
-  country: string;
+  country?: string;
 }) {
   const lines = [addr.line1];
   if (addr.line2?.trim() && addr.line2.trim() !== addr.line1.trim()) {

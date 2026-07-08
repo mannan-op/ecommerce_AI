@@ -68,6 +68,8 @@ services:
     environment:
       DATABASE_URL: postgres://ecommerce:ecommerce@db:5432/ecommerce
       REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
       USE_S3: "True"
       AWS_ACCESS_KEY_ID: minioadmin
       AWS_SECRET_ACCESS_KEY: minioadmin
@@ -77,6 +79,7 @@ services:
       AWS_S3_URL_PROTOCOL: "http:"
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend
       DEFAULT_PAYMENT_PROVIDER: demo
+      DEFAULT_TRYON_PROVIDER: auto
       PAYMENT_CURRENCY: usd
       EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
     depends_on:
@@ -86,6 +89,39 @@ services:
         condition: service_healthy
       createbuckets:
         condition: service_completed_successfully
+    volumes:
+      - ./apps/backend:/app
+
+  celery:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    command: celery -A config worker -l info
+    env_file:
+      - ./apps/backend/.env
+    environment:
+      DATABASE_URL: postgres://ecommerce:ecommerce@db:5432/ecommerce
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      USE_S3: "True"
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_STORAGE_BUCKET_NAME: ecommerce-media
+      AWS_S3_ENDPOINT_URL: http://minio:9000
+      AWS_S3_CUSTOM_DOMAIN: localhost:9000/ecommerce-media
+      AWS_S3_URL_PROTOCOL: "http:"
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend,celery
+      DEFAULT_TRYON_PROVIDER: auto
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+      backend:
+        condition: service_started
     volumes:
       - ./apps/backend:/app
 
