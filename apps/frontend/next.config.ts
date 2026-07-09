@@ -53,6 +53,9 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@ecommerce/types"],
   images: {
     remotePatterns,
+    // In Docker, the Next server cannot reach MinIO at localhost:9000 on the host.
+    // Unoptimized lets the browser load images directly from the mapped MinIO port.
+    unoptimized: process.env.NEXT_IMAGE_UNOPTIMIZED === "true",
   },
   async headers() {
     return [

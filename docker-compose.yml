@@ -86,7 +86,8 @@ services:
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend
       DEFAULT_PAYMENT_PROVIDER: demo
       S3_PRIVATE_MEDIA: "false"
-      DEFAULT_TRYON_PROVIDER: auto
+      DEFAULT_TRYON_PROVIDER: huggingface
+      THROTTLE_TRYON: "60/hour"
       PAYMENT_CURRENCY: usd
       EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
     depends_on:
@@ -115,11 +116,15 @@ services:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
+      args:
+        NEXT_IMAGE_UNOPTIMIZED: "true"
     ports:
       - "3000:3000"
     environment:
       DJANGO_API_URL: http://backend:8000/api
       NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_PUBLIC_IMAGE_HOSTNAMES: localhost:9000,127.0.0.1:9000
+      NEXT_IMAGE_UNOPTIMIZED: "true"
       NODE_ENV: production
     depends_on:
       backend:
@@ -145,7 +150,7 @@ services:
       AWS_S3_CUSTOM_DOMAIN: localhost:9000/ecommerce-media
       AWS_S3_URL_PROTOCOL: "http:"
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend,celery
-      DEFAULT_TRYON_PROVIDER: auto
+      DEFAULT_TRYON_PROVIDER: huggingface
     depends_on:
       db:
         condition: service_healthy
@@ -176,7 +181,7 @@ services:
       AWS_S3_CUSTOM_DOMAIN: localhost:9000/ecommerce-media
       AWS_S3_URL_PROTOCOL: "http:"
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend,celery
-      DEFAULT_TRYON_PROVIDER: auto
+      DEFAULT_TRYON_PROVIDER: huggingface
     depends_on:
       db:
         condition: service_healthy

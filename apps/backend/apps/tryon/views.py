@@ -51,6 +51,12 @@ class TryOnJobViewSet(
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
     throttle_classes = [TryOnRateThrottle]
 
+    def get_throttles(self):
+        # Only limit expensive job creation; status polling must not share this bucket.
+        if self.action == "create":
+            return [TryOnRateThrottle()]
+        return []
+
     def get_queryset(self):
         return TryOnJob.objects.filter(user=self.request.user).select_related(
             "product",

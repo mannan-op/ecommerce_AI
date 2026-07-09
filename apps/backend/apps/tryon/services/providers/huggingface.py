@@ -12,11 +12,22 @@ logger = logging.getLogger(__name__)
 def _create_gradio_client(space_id: str, hf_token: str):
     from gradio_client import Client
 
+    # HF Spaces can be slow on cold start; allow longer connect/read timeouts.
+    client_kwargs: dict = {}
     try:
-        return Client(space_id, hf_token=hf_token)
+        import inspect
+
+        params = inspect.signature(Client.__init__).parameters
+        if "httpx_kwargs" in params:
+            client_kwargs["httpx_kwargs"] = {"timeout": 120.0}
+    except Exception:
+        pass
+
+    try:
+        return Client(space_id, hf_token=hf_token, **client_kwargs)
     except TypeError:
         # gradio-client 2.x uses `token` instead of `hf_token`
-        return Client(space_id, token=hf_token)
+        return Client(space_id, token=hf_token, **client_kwargs)
 
 
 class HuggingFaceTryOnProvider(TryOnProvider):
@@ -108,9 +119,10 @@ class HuggingFaceTryOnProvider(TryOnProvider):
                     "Hugging Face try-on space unavailable (404). "
                     "The space may be sleeping — wait 30s and try again."
                 )
-            elif "quota" in message.lower() or "rate" in message.lower():
+            elif "handshake" in message.lower() or "connecttimeout" in message.lower().replace(" ", ""):
                 message = (
-                    "Hugging Face free GPU quota exceeded. Try again tomorrow."
+                    "Could not reach Hugging Face (network/SSL timeout). "
+                    "Check Docker outbound HTTPS, then retry in 30s."
                 )
             return TryOnResult(success=False, error_message=message)
         finally:

@@ -206,12 +206,12 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
-        "auth": "20/minute",
-        "burst": "60/minute",
-        "tryon": "20/hour",
-        "stylist_chat": "60/hour",
+        "anon": env("THROTTLE_ANON", default="100/hour"),
+        "user": env("THROTTLE_USER", default="1000/hour"),
+        "auth": env("THROTTLE_AUTH", default="20/minute"),
+        "burst": env("THROTTLE_BURST", default="60/minute"),
+        "tryon": env("THROTTLE_TRYON", default="20/hour"),
+        "stylist_chat": env("THROTTLE_STYLIST_CHAT", default="60/hour"),
     },
 }
 

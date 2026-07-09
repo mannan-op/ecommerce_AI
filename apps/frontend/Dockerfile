@@ -9,6 +9,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG NEXT_IMAGE_UNOPTIMIZED=true
+ENV NEXT_IMAGE_UNOPTIMIZED=$NEXT_IMAGE_UNOPTIMIZED
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build --workspace=@ecommerce/types && npm run build --workspace=@ecommerce/frontend
 

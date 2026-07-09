@@ -20,66 +20,135 @@ Phase 2 adds **virtual try-on** (upload photo → AI preview) and **stylist CSR 
 - Python 3.12+
 - Docker & Docker Compose (PostgreSQL, Redis, MinIO, Django)
 
-## Quick start
+## Quick start (Docker — recommended)
 
-### 1. Install JS dependencies
+Run the **full stack** in Docker: PostgreSQL, Redis, MinIO, Django API, Celery workers, and Next.js frontend.
+
+### 1. Install JS dependencies (needed for type generation / local dev)
 
 ```bash
 npm install
 ```
 
-### 2. Environment files
+### 2. Backend environment
 
 ```bash
-# Backend (Docker Compose — includes MinIO/S3 settings)
 cp apps/backend/.env.docker.example apps/backend/.env
-
-# Frontend
-cp apps/frontend/.env.example apps/frontend/.env.local
 ```
 
-Never commit `.env` or `.env.local`.
+Edit `apps/backend/.env` and set at minimum:
 
-### 3. Start infrastructure + Django
+```env
+# Required for Hugging Face virtual try-on (free token from https://huggingface.co/settings/tokens)
+HF_TOKEN=hf_your_token_here
+
+# Optional — AI stylist chat (https://console.groq.com/keys)
+GROQ_API_KEY=gsk_your_key_here
+```
+
+Never commit `.env`.
+
+> **Try-on provider:** `docker-compose.yml` sets `DEFAULT_TRYON_PROVIDER=huggingface` for backend + Celery. To use local demo overlay instead (no external API), change it to `demo` in `docker-compose.yml` and run `docker compose up -d backend celery celery-beat`.
+
+### 3. Build and start all services
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-- API: http://localhost:8000/api/catalog/products/
-- OpenAPI schema: http://localhost:8000/api/schema/
-- Swagger UI: http://localhost:8000/api/docs/
-- Django admin: http://localhost:8000/admin/
-- MinIO console: http://localhost:9001 (minioadmin / minioadmin)
-
-### 4. Start Next.js (separate terminal)
+Wait until services are healthy:
 
 ```bash
-npm run dev --workspace=@ecommerce/frontend
+docker compose ps
 ```
 
-Frontend: http://localhost:3000
+Migrations run automatically when backend/Celery containers start.
 
-### 5. Load demo data
+### 4. Load demo catalog (first time)
 
 ```bash
-# With Docker backend running
-docker compose exec backend python manage.py seed_demo
-
-# Or locally
-cd apps/backend && python manage.py seed_demo
+docker compose exec backend python manage.py seed_demo --replace-images
 ```
 
-Re-run with `--clear` to reset demo catalog and users first.
+Use `--clear` to reset users + catalog first:
+
+```bash
+docker compose exec backend python manage.py seed_demo --clear --replace-images
+```
+
+### 5. Open the app
+
+| Service | URL |
+|---------|-----|
+| **Store (frontend)** | http://localhost:3000 |
+| **API health** | http://localhost:8000/api/health/ |
+| **API docs (Swagger)** | http://localhost:8000/api/docs/ |
+| **Django admin** | http://localhost:8000/admin/ |
+| **MinIO console** | http://localhost:9001 (`minioadmin` / `minioadmin`) |
 
 **Demo accounts**
 
 | Email | Password | Role |
 |-------|----------|------|
 | `demo@example.com` | `demo12345` | Customer (with saved PK addresses) |
-| `admin@example.com` | `admin12345` | Django admin superuser |
+| `admin@example.com` | `admin12345` | Staff + Django superuser |
 
-Demo catalog includes 4 categories, 10 products, 26+ variants (cotton, linen, lawn, silk, etc.), and placeholder product images.
+### Useful Docker commands
+
+```bash
+# View logs (all services)
+docker compose logs -f
+
+# View logs (one service)
+docker compose logs -f celery
+
+# Stop everything
+docker compose down
+
+# Rebuild after code changes
+docker compose up -d --build
+
+# Rebuild frontend only (e.g. after Next.js config changes)
+docker compose up -d --build frontend
+
+# Run backend tests
+docker compose exec backend pytest
+
+# Apply migrations manually
+docker compose exec backend python manage.py migrate
+
+# Django shell
+docker compose exec backend python manage.py shell
+```
+
+---
+
+## Quick start (hybrid — Docker backend + local frontend)
+
+Use this if you want hot reload on the Next.js app while keeping infra in Docker.
+
+### 1–2. Same as above (`npm install`, copy `.env`)
+
+### 3. Start backend stack only (no frontend container)
+
+```bash
+docker compose up --build -d db redis minio createbuckets backend celery celery-beat
+```
+
+### 4. Seed demo data
+
+```bash
+docker compose exec backend python manage.py seed_demo --replace-images
+```
+
+### 5. Frontend env + dev server
+
+```bash
+cp apps/frontend/.env.example apps/frontend/.env.local
+npm run dev --workspace=@ecommerce/frontend
+```
+
+Frontend: http://localhost:3000
 
 ## Development without Docker
 
@@ -188,55 +257,75 @@ Public config endpoint: `GET /api/orders/payments/config/`
 
 Customers can open **Virtual try-on** on any product page, upload a photo (with consent), and receive an AI-generated preview. Staff can manage stylist follow-ups from the admin panel.
 
-| Variable | App | Default | Description |
-|----------|-----|---------|-------------|
-| `DEFAULT_TRYON_PROVIDER` | Django | `auto` | `auto`, `fal`, `replicate`, or `demo` |
-| `FAL_KEY` | Django | — | **Recommended** — Fal.ai key for FASHN v1.6 VTON |
+| Variable | App | Default (Docker) | Description |
+|----------|-----|------------------|-------------|
+| `DEFAULT_TRYON_PROVIDER` | Django | `huggingface` | `demo`, `huggingface`, `fal`, `replicate`, or `auto` |
+| `HF_TOKEN` | Django | — | **Free** Hugging Face token for IDM-VTON Space |
+| `TRYON_HF_SPACE` | Django | `yisol/IDM-VTON` | Hugging Face Gradio Space slug |
+| `TRYON_PREFER_FREE` | Django | `True` | With `auto`, prefer HF before paid providers |
+| `FAL_KEY` | Django | — | Fal.ai key for FASHN v1.6 VTON |
 | `TRYON_FAL_MODEL` | Django | `fal-ai/fashn/tryon/v1.6` | Fal virtual try-on model |
-| `TRYON_FAL_MODE` | Django | `balanced` | `performance`, `balanced`, or `quality` |
-| `REPLICATE_API_TOKEN` | Django | — | Fallback — Replicate IDM-VTON |
-| `TRYON_REPLICATE_MODEL` | Django | `cuuupid/idm-vton` | Replicate model slug |
+| `REPLICATE_API_TOKEN` | Django | — | Replicate IDM-VTON fallback |
 | `TRYON_SYNC_PROCESSING` | Django | `False` | Process jobs inline (no Celery worker) |
 | `TRYON_PHOTO_RETENTION_DAYS` | Django | `30` | User photo retention window |
+| `THROTTLE_TRYON` | Django | `60/hour` | Rate limit for **creating** try-on jobs only |
 | `CELERY_BROKER_URL` | Django/Celery | `REDIS_URL` | Job queue broker |
 
-**Enable real AI try-on (recommended):**
+**Enable Hugging Face try-on (recommended for local Docker):**
 
-1. Create a free account at [fal.ai](https://fal.ai) and copy your API key.
+1. Create a free token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) (read access is enough).
 2. Add to `apps/backend/.env`:
 
 ```env
-FAL_KEY=your_fal_api_key_here
-DEFAULT_TRYON_PROVIDER=auto
+HF_TOKEN=hf_your_token_here
+DEFAULT_TRYON_PROVIDER=huggingface
 ```
 
-With `auto`, the backend picks **Fal (FASHN v1.6)** when `FAL_KEY` is set, else Replicate if token is set, else demo overlay.
+3. Recreate workers:
 
-> Virtual try-on uses **vision/image models** (VTON), not text LLMs. FASHN and IDM-VTON are purpose-built for fitting clothes onto photos.
+```bash
+docker compose up -d backend celery celery-beat
+```
+
+4. Verify:
+
+```bash
+docker compose exec backend python -c "import urllib.request,json; print(json.loads(urllib.request.urlopen('http://localhost:8000/api/tryon/jobs/config/').read())['provider'])"
+# Expected: huggingface
+```
+
+**Notes:**
+- First request after the HF Space sleeps can take **1–3 minutes** (cold start + free GPU queue).
+- Free HF accounts have **daily GPU limits**; retry tomorrow or switch provider if quota is exceeded.
+- If Hugging Face times out from Docker, retry once. For offline demos, set `DEFAULT_TRYON_PROVIDER=demo` in `docker-compose.yml`.
+
+**Other providers (`auto` selection order when keys are set):**
+
+1. Hugging Face (if `HF_TOKEN` + `TRYON_PREFER_FREE=True`)
+2. Fal (if `FAL_KEY`)
+3. Replicate (if `REPLICATE_API_TOKEN`)
+4. Demo overlay (fallback)
 
 **Try-on flow:**
 1. Sign in and open a product → **Virtual try-on**
 2. Select variant, upload photo, accept consent
 3. `POST /api/tryon/jobs/` creates a job; Celery worker runs the provider
-4. Frontend polls `GET /api/tryon/jobs/{id}/` until `completed` or `failed`
+4. Frontend polls `GET /api/tryon/jobs/{id}/` until `completed` or `failed` (up to ~3 min)
 5. Optional: **Speak with a stylist** → `POST /api/tryon/csr/`
 
 **Staff:** http://localhost:3000/admin/tryon — stylist queue with status + notes (`PATCH /api/admin/tryon/csr/{id}/`).
 
-**Docker:** `docker compose up` starts `backend`, `celery`, `redis`, `db`, and `minio`. Run migrations after pull:
+**Docker services for try-on:** `backend`, `celery`, `celery-beat`, `redis`, `minio`, `db`. Celery must be running — check with `docker compose ps` and `docker compose logs celery`.
 
-```bash
-docker compose exec backend python manage.py migrate
-```
-
-**Privacy:** User photos are stored in private media (`tryon/user-photos/`). Demo mode composites locally; production should use `replicate` or another commercial VTON API. Photos are purged after `TRYON_PHOTO_RETENTION_DAYS` (purge task can be scheduled via Celery beat in production).
+**Privacy:** User photos are stored in media (`tryon/user-photos/`). Set `S3_PRIVATE_MEDIA=true` in production. Photos are purged after `TRYON_PHOTO_RETENTION_DAYS` via Celery Beat.
 
 ## Feature checklist (Phase 2)
 
 | Feature | Status |
 |---------|--------|
 | Try-on job API (upload, poll, list) | ✅ Complete |
-| Demo try-on provider (no API key) | ✅ Fallback only |
+| Demo try-on provider (no API key) | ✅ Complete |
+| Hugging Face IDM-VTON provider | ✅ Complete (requires HF_TOKEN) |
 | Fal.ai FASHN v1.6 provider | ✅ Complete (requires FAL_KEY) |
 | Replicate IDM-VTON provider | ✅ Complete (requires token) |
 | Celery async processing | ✅ Complete |
@@ -305,6 +394,19 @@ Signed-in customers see a **bell icon** in the navbar. Notifications poll every 
 - **Notifications**: `Notification` (in-app alerts per user)
 
 Product images are stored in S3-compatible storage (MinIO locally via Docker).
+
+**Product images in Docker:** The frontend container loads images directly from MinIO at `http://localhost:9000/...` (`NEXT_IMAGE_UNOPTIMIZED=true` in `docker-compose.yml`). If images are missing after first run, seed with `--replace-images`.
+
+## Troubleshooting (Docker)
+
+| Issue | Fix |
+|-------|-----|
+| Product images blank | `docker compose exec backend python manage.py seed_demo --replace-images` then hard-refresh browser |
+| Try-on rate limited | Wait for window to reset, or `docker compose exec redis redis-cli KEYS "throttle_tryon_*"` and delete keys |
+| HF SSL / timeout error | Retry; ensure Docker has outbound HTTPS. Temporarily set `DEFAULT_TRYON_PROVIDER=demo` |
+| Celery not processing | `docker compose ps` — ensure `celery` is up; check `docker compose logs celery` |
+| Frontend changes not applied | `docker compose up -d --build frontend` |
+| Backend code changes | Auto-loaded via volume mount; restart if needed: `docker compose restart backend celery` |
 
 ## Type generation
 
