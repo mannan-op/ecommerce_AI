@@ -35,15 +35,24 @@ class Order(models.Model):
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2)
-    idempotency_key = models.CharField(
-        max_length=64, blank=True, unique=True, null=True
-    )
+    idempotency_key = models.CharField(max_length=64, blank=True, null=True)
     estimated_delivery = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["status"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "idempotency_key"],
+                condition=~models.Q(idempotency_key="") & ~models.Q(idempotency_key__isnull=True),
+                name="unique_idempotency_per_user",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"Order {self.id} ({self.status})"

@@ -1,7 +1,9 @@
 import base64
+import ipaddress
 import logging
 import mimetypes
 import os
+import socket
 import tempfile
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -26,8 +28,39 @@ def is_local_media_url(url: str) -> bool:
     return host in {"localhost", "127.0.0.1", "minio", "backend", "0.0.0.0"}
 
 
+def _is_private_ip(hostname: str) -> bool:
+    try:
+        for family in (socket.AF_INET, socket.AF_INET6):
+            for info in socket.getaddrinfo(hostname, None, family, socket.SOCK_STREAM):
+                ip = ipaddress.ip_address(info[4][0])
+                if (
+                    ip.is_private
+                    or ip.is_loopback
+                    or ip.is_link_local
+                    or ip.is_reserved
+                    or ip.is_multicast
+                ):
+                    return True
+    except socket.gaierror:
+        return True
+    return False
+
+
+def _is_safe_remote_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        return False
+    host = (parsed.hostname or "").lower()
+    if not host or host in {"localhost", "127.0.0.1", "minio", "backend", "0.0.0.0"}:
+        return False
+    return not _is_private_ip(host)
+
+
 def read_bytes_from_url(url: str) -> bytes | None:
     if not url or is_local_media_url(url):
+        return None
+    if not _is_safe_remote_url(url):
+        logger.warning("Blocked unsafe garment URL fetch: %s", url)
         return None
     try:
         with urlopen(url, timeout=20) as response:  # noqa: S310
@@ -93,5 +126,7 @@ def resolve_garment_input(garment_image_url: str, product) -> str:
 
 
 def download_result_bytes(url: str) -> bytes:
+    if not _is_safe_remote_url(url) and not is_local_media_url(url):
+        raise ValueError(f"Unsafe result URL: {url}")
     with urlopen(url, timeout=60) as response:  # noqa: S310
         return response.read()

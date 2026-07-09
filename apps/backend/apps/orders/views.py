@@ -19,6 +19,7 @@ from apps.orders.serializers import (
 )
 from apps.orders.services.inventory import reduce_stock_for_order, validate_cart_stock
 from apps.orders.services.totals import calculate_order_totals
+from apps.notifications.services import notify_order_confirmed, notify_payment_failed
 
 logger = logging.getLogger(__name__)
 
@@ -149,8 +150,7 @@ class OrderViewSet(
             ]
         )
 
-        provider_name = serializer.validated_data.get("payment_provider")
-        provider = get_payment_provider(provider_name)
+        provider = get_payment_provider()
         intent = provider.create_payment_intent(
             amount=totals["total"],
             currency=getattr(settings, "PAYMENT_CURRENCY", "usd"),
@@ -234,12 +234,14 @@ class OrderViewSet(
                 logger.exception(
                     "Order confirmation email failed for order %s", order.id
                 )
+            notify_order_confirmed(request.user, order)
             return Response(
                 {"order": OrderSerializer(order).data, "already_paid": False}
             )
 
         payment.status = Payment.Status.FAILED
         payment.save(update_fields=["status", "updated_at"])
+        notify_payment_failed(request.user, order)
         raise BusinessError(
             result.message or "Payment failed.",
             code="PAYMENT_FAILED",

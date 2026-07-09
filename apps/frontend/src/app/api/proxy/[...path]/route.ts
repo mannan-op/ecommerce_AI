@@ -4,6 +4,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { createDjangoClient } from "@/lib/api/django";
 import {
+  assertProxyPathAllowed,
+  ProxyPathError,
+} from "@/lib/api/proxy-allowlist";
+import {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_MAX_AGE,
   COOKIE_OPTIONS,
@@ -56,6 +60,15 @@ async function proxyRequest(
   if (!access && refresh) {
     const newAccess = await refreshAccessToken(refresh);
     if (newAccess) access = newAccess;
+  }
+
+  try {
+    assertProxyPathAllowed(path);
+  } catch (error) {
+    if (error instanceof ProxyPathError) {
+      return NextResponse.json({ detail: "Forbidden path" }, { status: 403 });
+    }
+    throw error;
   }
 
   const targetPath = path.join("/");

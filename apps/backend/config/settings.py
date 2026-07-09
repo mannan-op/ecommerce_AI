@@ -17,13 +17,18 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
     USE_S3=(bool, False),
+    S3_PRIVATE_MEDIA=(bool, False),
+    SENTRY_DSN=(str, ""),
 )
 
 environ.Env.read_env(BASE_DIR / ".env")
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
-ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+ALLOWED_HOSTS = [h for h in env("ALLOWED_HOSTS") if h != "0.0.0.0"]
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = env.int("DATA_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024)
+FILE_UPLOAD_MAX_MEMORY_SIZE = env.int("FILE_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -35,6 +40,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
     "storages",
@@ -46,6 +52,7 @@ INSTALLED_APPS = [
     "apps.cart",
     "apps.orders",
     "apps.tryon",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -127,6 +134,8 @@ CACHES = {
 
 # S3-compatible media storage (MinIO locally, AWS S3 / Cloudflare R2 in prod)
 USE_S3 = env("USE_S3")
+S3_PRIVATE_MEDIA = env.bool("S3_PRIVATE_MEDIA", default=False)
+S3_PRESIGNED_URL_EXPIRY = env.int("S3_PRESIGNED_URL_EXPIRY", default=3600)
 
 if USE_S3:
     AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
@@ -136,7 +145,7 @@ if USE_S3:
     AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = None
-    AWS_QUERYSTRING_AUTH = False
+    AWS_QUERYSTRING_AUTH = S3_PRIVATE_MEDIA
     AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default=None)
     AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
     if AWS_S3_URL_PROTOCOL and not AWS_S3_URL_PROTOCOL.endswith(":"):
@@ -201,6 +210,8 @@ REST_FRAMEWORK = {
         "user": "1000/hour",
         "auth": "20/minute",
         "burst": "60/minute",
+        "tryon": "20/hour",
+        "stylist_chat": "60/hour",
     },
 }
 
@@ -256,6 +267,25 @@ TRYON_REPLICATE_MODEL = env(
 TRYON_PHOTO_RETENTION_DAYS = env.int("TRYON_PHOTO_RETENTION_DAYS", default=30)
 TRYON_SYNC_PROCESSING = env.bool("TRYON_SYNC_PROCESSING", default=False)
 
+# AI stylist chat (Groq — OpenAI-compatible API)
+GROQ_API_KEY = env("GROQ_API_KEY", default="").strip()
+GROQ_MODEL = env("GROQ_MODEL", default="llama-3.3-70b-versatile")
+
+NOTIFICATION_RETENTION_DAYS = env.int("NOTIFICATION_RETENTION_DAYS", default=90)
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    "purge-expired-tryon-photos": {
+        "task": "apps.notifications.tasks.purge_expired_tryon_photos_task",
+        "schedule": crontab(hour=3, minute=0),
+    },
+    "purge-old-notifications": {
+        "task": "apps.notifications.tasks.purge_old_notifications_task",
+        "schedule": crontab(hour=4, minute=0, day_of_week="sun"),
+    },
+}
+
 if TRYON_SYNC_PROCESSING:
     CELERY_TASK_ALWAYS_EAGER = True
 
@@ -263,6 +293,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -281,3 +312,67 @@ CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
     default=["http://localhost:3000"],
 )
+
+# --- Production hardening (active when DEBUG=False) ---
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SENTRY_DSN = env("SENTRY_DSN")
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.celery import CeleryIntegration
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration(), CeleryIntegration()],
+            traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.1),
+            send_default_pii=False,
+            environment=env("SENTRY_ENVIRONMENT", default="production"),
+        )
+    except ImportError:
+        pass
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": env("LOG_LEVEL", default="INFO"),
+    },
+    "loggers": {
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "apps": {
+            "handlers": ["console"],
+            "level": env("LOG_LEVEL", default="INFO"),
+            "propagate": False,
+        },
+    },
+}

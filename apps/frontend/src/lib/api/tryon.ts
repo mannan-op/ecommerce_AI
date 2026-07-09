@@ -44,6 +44,19 @@ export interface TryOnConfig {
   is_free: boolean;
   estimated_seconds: number;
   message: string;
+  stylist_chat_enabled?: boolean;
+  stylist_provider?: string | null;
+  stylist_model?: string | null;
+}
+
+export interface StylistChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface StylistChatResponse {
+  reply: string;
+  model?: string | null;
 }
 
 export interface PaginatedCSRHandoffs {
@@ -89,6 +102,20 @@ export async function fetchTryOnJob(jobId: string): Promise<TryOnJob> {
     credentials: "include",
   });
   return parseResponse(response, "Could not load try-on job.");
+}
+
+export async function sendStylistChatMessage(
+  jobId: string,
+  message: string,
+  history: StylistChatMessage[] = []
+): Promise<StylistChatResponse> {
+  const response = await fetch(`/api/proxy/tryon/jobs/${jobId}/stylist-chat`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, history }),
+  });
+  return parseResponse(response, "Could not reach AI stylist.");
 }
 
 export async function createCSRHandoff(payload: {

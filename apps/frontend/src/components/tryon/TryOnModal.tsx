@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -17,13 +16,12 @@ import { motion } from "framer-motion";
 
 import { VariantSelector } from "@/components/product/VariantSelector";
 import { TryOnImageFrame } from "@/components/tryon/TryOnImageFrame";
+import { TryOnStylistChat } from "@/components/tryon/TryOnStylistChat";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/components/providers/AuthProvider";
 import type { ProductDetail, ProductVariant } from "@/lib/api/types";
 import {
-  createCSRHandoff,
   createTryOnJob,
   fetchTryOnConfig,
   pollTryOnJob,
@@ -34,7 +32,7 @@ import { normalizeMediaUrl } from "@/lib/media";
 import { useCartStore } from "@/lib/cart/store";
 import { cn } from "@/lib/utils";
 
-type Step = "upload" | "processing" | "result" | "csr";
+type Step = "upload" | "processing" | "result" | "chat";
 
 const STEPS: { id: Step; label: string }[] = [
   { id: "upload", label: "Upload" },
@@ -63,8 +61,6 @@ export function TryOnModal({ open, onClose, product }: TryOnModalProps) {
   const [job, setJob] = useState<TryOnJob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [csrMessage, setCsrMessage] = useState("");
-  const [csrSent, setCsrSent] = useState(false);
   const [tryOnConfig, setTryOnConfig] = useState<TryOnConfig | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,8 +84,6 @@ export function TryOnModal({ open, onClose, product }: TryOnModalProps) {
     setJob(null);
     setError(null);
     setLoading(false);
-    setCsrMessage("");
-    setCsrSent(false);
   }, []);
 
   useEffect(() => {
@@ -175,26 +169,6 @@ export function TryOnModal({ open, onClose, product }: TryOnModalProps) {
     );
     onClose();
     router.push("/cart");
-  }
-
-  async function handleCSRSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!job || !user) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await createCSRHandoff({
-        tryon_job_id: job.id,
-        message: csrMessage,
-        contact_email: user.email,
-        preferred_channel: "email",
-      });
-      setCsrSent(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send request.");
-    } finally {
-      setLoading(false);
-    }
   }
 
   const stepIndex = STEPS.findIndex((s) => s.id === step);
@@ -426,9 +400,9 @@ export function TryOnModal({ open, onClose, product }: TryOnModalProps) {
                     <Button variant="accent" size="lg" onClick={handleAddToBag} disabled={!selected}>
                       Add to bag
                     </Button>
-                    <Button variant="secondary" size="lg" onClick={() => setStep("csr")}>
+                    <Button variant="secondary" size="lg" onClick={() => setStep("chat")}>
                       <MessageCircle className="mr-2 h-4 w-4" />
-                      Speak with a stylist
+                      Ask AI stylist
                     </Button>
                     <a
                       href={resultUrl}
@@ -465,65 +439,14 @@ export function TryOnModal({ open, onClose, product }: TryOnModalProps) {
             </div>
           ) : null}
 
-          {step === "csr" && job ? (
-            <div className="mx-auto max-w-lg space-y-6">
-              {resultUrl && uploadedUrl ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={uploadedUrl}
-                    alt=""
-                    className="max-h-32 w-full rounded-xl object-contain bg-surface-elevated p-1"
-                  />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={resultUrl}
-                    alt=""
-                    className="max-h-32 w-full rounded-xl object-contain bg-surface-elevated p-1"
-                  />
-                </div>
-              ) : null}
-              <div className="text-center">
-                <h3 className="font-display text-xl">Personal stylist</h3>
-                <p className="mt-2 text-sm text-muted">
-                  Share your try-on with our team for fit and styling advice.
-                </p>
-              </div>
-              {csrSent ? (
-                <div className="rounded-3xl border border-accent/30 bg-accent/5 px-6 py-8 text-center">
-                  <p className="font-display text-lg">We&apos;ll be in touch</p>
-                  <p className="mt-2 text-sm text-muted">
-                    A stylist will reach you at {user?.email}.
-                  </p>
-                  <Link
-                    href="/shop"
-                    className="mt-6 inline-block text-sm text-accent underline-offset-4 hover:underline"
-                  >
-                    Continue shopping
-                  </Link>
-                </div>
-              ) : (
-                <form onSubmit={handleCSRSubmit} className="space-y-4">
-                  <textarea
-                    id="csr-message"
-                    required
-                    rows={4}
-                    value={csrMessage}
-                    onChange={(e) => setCsrMessage(e.target.value)}
-                    placeholder="I'm 5'8 - should I size up for heels?"
-                    className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-                  />
-                  <Input label="Email" value={user?.email ?? ""} readOnly disabled />
-                  {error ? <p className="text-sm text-error">{error}</p> : null}
-                  <Button type="submit" variant="accent" loading={loading} fullWidth size="lg">
-                    Send to stylist
-                  </Button>
-                  <Button type="button" variant="ghost" fullWidth onClick={() => setStep("result")}>
-                    Back to reveal
-                  </Button>
-                </form>
-              )}
-            </div>
+          {step === "chat" && job ? (
+            <TryOnStylistChat
+              jobId={job.id}
+              productName={product.name}
+              variantLabel={selected?.color ?? job.variant_color}
+              enabled={tryOnConfig?.stylist_chat_enabled ?? false}
+              onBack={() => setStep("result")}
+            />
           ) : null}
         </div>
 

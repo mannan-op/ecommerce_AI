@@ -1,7 +1,13 @@
 from rest_framework import serializers
 
+from apps.common.image_validation import validate_image_upload
+from apps.common.storage import file_url
 from apps.catalog.models import Product, ProductVariant
 from apps.tryon.models import CSRHandoff, TryOnJob
+from apps.notifications.services import (
+    notify_csr_created_for_staff,
+    notify_csr_status_to_customer,
+)
 
 
 class TryOnJobCreateSerializer(serializers.ModelSerializer):
@@ -38,13 +44,7 @@ class TryOnJobCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def validate_user_photo(self, photo) -> object:
-        max_bytes = 8 * 1024 * 1024
-        if photo.size > max_bytes:
-            raise serializers.ValidationError("Photo must be 8 MB or smaller.")
-        content_type = getattr(photo, "content_type", "")
-        if content_type and not content_type.startswith("image/"):
-            raise serializers.ValidationError("Upload must be an image file.")
-        return photo
+        return validate_image_upload(photo)
 
 
 class TryOnJobSerializer(serializers.ModelSerializer):
@@ -55,8 +55,8 @@ class TryOnJobSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
-    result_image = serializers.ImageField(read_only=True)
-    user_photo = serializers.ImageField(read_only=True)
+    result_image = serializers.SerializerMethodField()
+    user_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = TryOnJob
@@ -79,6 +79,12 @@ class TryOnJobSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
+
+    def get_result_image(self, obj: TryOnJob) -> str:
+        return file_url(obj.result_image)
+
+    def get_user_photo(self, obj: TryOnJob) -> str:
+        return file_url(obj.user_photo)
 
 
 class CSRHandoffCreateSerializer(serializers.ModelSerializer):
@@ -104,11 +110,13 @@ class CSRHandoffCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data: dict) -> CSRHandoff:
         job = validated_data.pop("tryon_job_id")
-        return CSRHandoff.objects.create(
+        handoff = CSRHandoff.objects.create(
             tryon_job=job,
             user=self.context["request"].user,
             **validated_data,
         )
+        notify_csr_created_for_staff(handoff)
+        return handoff
 
 
 class CSRHandoffSerializer(serializers.ModelSerializer):
@@ -174,3 +182,18 @@ class AdminCSRHandoffSerializer(CSRHandoffSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class StylistChatMessageSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=["user", "assistant"])
+    content = serializers.CharField(max_length=4000)
+
+
+class StylistChatRequestSerializer(serializers.Serializer):
+    message = serializers.CharField(max_length=2000)
+    history = StylistChatMessageSerializer(many=True, required=False, default=list)
+
+
+class StylistChatResponseSerializer(serializers.Serializer):
+    reply = serializers.CharField()
+    model = serializers.CharField(required=False, allow_null=True)

@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.tryon.models import TryOnJob
 from apps.tryon.services.factory import get_tryon_provider
+from apps.notifications.services import notify_tryon_completed, notify_tryon_failed
 
 logger = logging.getLogger(__name__)
 
@@ -100,18 +101,22 @@ def process_tryon_job(self, job_id: str) -> None:
                 "updated_at",
             ]
         )
+        notify_tryon_completed(job)
         return
 
     job.status = TryOnJob.Status.FAILED
-    job.error_message = result.error_message or "Try-on generation failed."
-    job.provider_job_id = result.provider_job_id
+    job.error_message = (
+        (result.error_message if result else None) or "Try-on generation failed."
+    )
+    job.provider_job_id = getattr(result, "provider_job_id", "") or ""
     job.save(
         update_fields=["status", "error_message", "provider_job_id", "updated_at"]
     )
+    notify_tryon_failed(job)
 
 
 def enqueue_tryon_job(job_id: str) -> None:
-    """Queue job on Celery, or run inline when eager mode / no worker."""
+    """Queue job on Celery; inline only in DEBUG when workers are unavailable."""
     from django.conf import settings
 
     if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
@@ -122,16 +127,26 @@ def enqueue_tryon_job(job_id: str) -> None:
         from celery import current_app
 
         inspector = current_app.control.inspect(timeout=1.0)
-        if not inspector.ping():
-            logger.warning("No Celery workers detected; processing try-on inline")
-            process_tryon_job(str(job_id))
+        if inspector.ping():
+            process_tryon_job.delay(str(job_id))
             return
     except Exception:
-        logger.warning("Celery unavailable; processing try-on inline")
+        logger.warning("Celery inspect failed for try-on job %s", job_id)
+
+    if settings.DEBUG:
+        logger.warning("No Celery workers detected; processing try-on inline (dev only)")
         process_tryon_job(str(job_id))
         return
 
-    process_tryon_job.delay(str(job_id))
+    TryOnJob.objects.filter(id=job_id).update(
+        status=TryOnJob.Status.FAILED,
+        error_message="Try-on queue is temporarily unavailable. Please try again.",
+    )
+    try:
+        job = TryOnJob.objects.get(id=job_id)
+        notify_tryon_failed(job)
+    except TryOnJob.DoesNotExist:
+        pass
 
 
 def purge_expired_user_photos(retention_days: int) -> int:

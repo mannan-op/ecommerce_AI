@@ -42,7 +42,7 @@ export function HeroSection() {
             <span className="text-gradient-gold italic">Elegance</span>
           </h1>
           <p className="mt-6 max-w-md text-base leading-relaxed text-muted">
-            Discover curated Pakistani luxury — lawn suits, silk formals, and
+            Discover curated Pakistani women&apos;s luxury — lawn suits, silk formals, and
             artisanal pret wear crafted for those who dress with intention.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">

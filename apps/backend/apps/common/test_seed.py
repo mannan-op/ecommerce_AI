@@ -12,9 +12,9 @@ class SeedDemoCommandTests(TestCase):
         out = StringIO()
         call_command("seed_demo", stdout=out)
 
-        self.assertEqual(Category.objects.count(), 5)
-        self.assertEqual(Product.objects.count(), 12)
-        self.assertGreaterEqual(ProductVariant.objects.count(), 30)
+        self.assertEqual(Category.objects.count(), 4)
+        self.assertEqual(Product.objects.count(), 10)
+        self.assertGreaterEqual(ProductVariant.objects.count(), 26)
         self.assertTrue(User.objects.filter(email="demo@example.com").exists())
         self.assertTrue(User.objects.filter(email="admin@example.com").exists())
         self.assertGreaterEqual(Address.objects.count(), 2)
@@ -23,5 +23,5 @@ class SeedDemoCommandTests(TestCase):
         call_command("seed_demo")
         call_command("seed_demo", "--clear")
 
-        self.assertEqual(Category.objects.count(), 5)
-        self.assertEqual(Product.objects.count(), 12)
+        self.assertEqual(Category.objects.count(), 4)
+        self.assertEqual(Product.objects.count(), 10)

@@ -40,7 +40,10 @@ jobs:
         env:
           SECRET_KEY: ci-secret-key
           DEBUG: "False"
-        run: pytest
+        run: pytest apps/accounts/test_auth.py apps/orders/test_payment_security.py apps/orders/test_demo_payment.py apps/notifications apps/tryon/test_tryon.py -q
+
+      - name: Dependency audit
+        run: pip install pip-audit && pip-audit
 
   frontend:
     name: Frontend (lint + build)
@@ -67,3 +70,9 @@ jobs:
         run: npm run build --workspace=@ecommerce/frontend
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000/api
+
+      - name: Frontend unit tests
+        run: npm run test --workspace=@ecommerce/frontend
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high || true

@@ -95,7 +95,9 @@ export const serverApi = {
   ): Promise<import("./types").OrderDetail | null> {
     try {
       const client = (await import("./django")).createDjangoClient(accessToken);
-      const { data } = await client.get(`/orders/${id}/`);
+      const { data } = await client.get<import("./types").OrderDetail>(
+        `/orders/${id}/`
+      );
       return data;
     } catch {
       return null;

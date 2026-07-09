@@ -9,6 +9,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { api } from "@/lib/api";
 import { ApiError } from "@/lib/api/types";
 import type { StaffUser } from "@/lib/api/types";
+import { safeRedirect } from "@/lib/auth/safe-redirect";
 import { useCartStore } from "@/lib/cart/store";
 
 export function LoginForm() {
@@ -32,7 +33,7 @@ export function LoginForm() {
       });
       setUser(data.user as StaffUser);
       await mergeWithBackend();
-      const redirect = searchParams.get("redirect") ?? "/";
+      const redirect = safeRedirect(searchParams.get("redirect"));
       router.push(redirect);
       router.refresh();
     } catch (err) {

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.common.storage import file_url
 from apps.catalog.models import Category, Product, ProductImage, ProductVariant
 
 
@@ -11,10 +12,15 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductImage
         fields = ("id", "image", "alt_text", "is_primary", "sort_order")
         read_only_fields = fields
+
+    def get_image(self, obj: ProductImage) -> str:
+        return file_url(obj.image)
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):
@@ -63,7 +69,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_primary_image(self, obj: Product) -> str | None:
         image = obj.images.filter(is_primary=True).first() or obj.images.first()
         if image:
-            return image.image.url
+            return file_url(image.image)
         return None
 
 

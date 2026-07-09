@@ -79,7 +79,7 @@ Re-run with `--clear` to reset demo catalog and users first.
 | `demo@example.com` | `demo12345` | Customer (with saved PK addresses) |
 | `admin@example.com` | `admin12345` | Django admin superuser |
 
-Demo catalog includes 5 categories, 12 products, 30+ variants (cotton, linen, lawn, silk, etc.), and placeholder product images.
+Demo catalog includes 4 categories, 10 products, 26+ variants (cotton, linen, lawn, silk, etc.), and placeholder product images.
 
 ## Development without Docker
 
@@ -244,7 +244,33 @@ docker compose exec backend python manage.py migrate
 | CSR stylist handoff | ✅ Complete |
 | Admin stylist queue | ✅ Complete |
 | Photo consent + retention setting | ✅ Complete |
-| Push/in-app notifications | ❌ Phase 3 |
+| In-app notifications (bell + inbox) | ✅ Complete |
+| Groq AI stylist chat | ✅ Complete |
+| Celery Beat (photo + notification purge) | ✅ Complete |
+| Push notifications (browser/mobile) | ❌ Future |
+
+## Notifications (Phase 3)
+
+Signed-in customers see a **bell icon** in the navbar. Notifications poll every ~45 seconds and on window focus.
+
+| Event | Who gets notified |
+|-------|-------------------|
+| Order confirmed | Customer |
+| Payment failed | Customer |
+| Order shipped / delivered / cancelled | Customer (via Django admin status change) |
+| Try-on completed / failed | Customer |
+| CSR handoff created | Staff |
+| CSR contacted / resolved | Customer |
+
+**API:**
+- `GET /api/notifications/` — list
+- `GET /api/notifications/unread-count/` — badge count
+- `PATCH /api/notifications/{id}/read/` — mark one read
+- `POST /api/notifications/mark-all-read/` — mark all read
+
+**Frontend:** `/notifications` full inbox page.
+
+**Celery Beat** (docker `celery-beat` service): purges try-on photos daily, old notifications weekly.
 
 ## API overview
 
@@ -261,7 +287,10 @@ docker compose exec backend python manage.py migrate
 | `POST /api/orders/checkout/` | Create order + payment intent |
 | `POST /api/orders/payments/confirm/` | Confirm payment (demo or Stripe) |
 | `GET /api/orders/payments/config/` | Active payment provider config |
-| `GET /api/accounts/addresses/` | User shipping addresses |
+| `GET /api/health/` | Liveness/readiness (DB + Redis) |
+| `POST /api/webhooks/stripe/` | Stripe payment webhooks (when using Stripe) |
+| `GET /api/notifications/` | List in-app notifications |
+| `GET /api/notifications/unread-count/` | Unread badge count |
 | `POST /api/tryon/jobs/` | Create virtual try-on job (multipart) |
 | `GET /api/tryon/jobs/{id}/` | Poll try-on job status + result |
 | `POST /api/tryon/csr/` | Request stylist follow-up |
@@ -273,6 +302,7 @@ docker compose exec backend python manage.py migrate
 - **Cart**: `Cart` (user or session), `CartItem` (variant-based)
 - **Orders**: `Order`, `OrderItem`, `Address`, `Payment` (pending/paid/failed)
 - **Try-on**: `TryOnJob` (user photo, result, status), `CSRHandoff` (stylist requests)
+- **Notifications**: `Notification` (in-app alerts per user)
 
 Product images are stored in S3-compatible storage (MinIO locally via Docker).
 
@@ -286,9 +316,33 @@ npm run generate:types
 
 This exports `apps/backend/schema.yaml` via drf-spectacular, then generates `packages/types/src/generated.ts` with openapi-typescript.
 
+## Production hardening
+
+The project includes production-oriented defaults while keeping **demo payments** as the server-side provider (`DEFAULT_PAYMENT_PROVIDER=demo`). Clients cannot override the payment provider at checkout.
+
+| Area | Implementation |
+|------|----------------|
+| Payments | Server-only provider selection; demo checkout for local/staging |
+| Auth | JWT refresh rotation + blacklist; `is_staff` hidden from non-staff `/me` |
+| API proxy | Allowlisted paths only (no admin routes) |
+| Media | Optional private S3 (`S3_PRIVATE_MEDIA=true`) with presigned URLs |
+| Runtime | Gunicorn in backend Docker image; `/api/health/` probe |
+| Security | HTTPS headers when `DEBUG=False`; Next.js security headers |
+| Ops | Structured logging, optional Sentry (`SENTRY_DSN`), `scripts/backup-db.sh` |
+
+**Before a public deploy**, also set: `DEBUG=False`, strong `SECRET_KEY`, real `ALLOWED_HOSTS` / CORS / CSRF origins, TLS reverse proxy, and `S3_PRIVATE_MEDIA=true` for user try-on photos.
+
+```bash
+# Apply new migrations (JWT blacklist + order indexes)
+docker compose exec backend python manage.py migrate
+
+# Rebuild backend with Gunicorn
+docker compose up -d --build backend celery celery-beat
+```
+
 ## CI
 
 GitHub Actions runs on push/PR:
 
-- **Backend**: `ruff check` + `pytest` (SQLite test settings)
-- **Frontend**: ESLint + `next build`
+- **Backend**: `ruff check` + `pytest` + `pip-audit` (SQLite test settings)
+- **Frontend**: ESLint + `next build` + unit tests + `npm audit`

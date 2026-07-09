@@ -9,12 +9,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const run = () => hydrateFromBackend();
-    if ("requestIdleCallback" in window) {
+    if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(run, { timeout: 2000 });
       return () => window.cancelIdleCallback(id);
     }
-    const id = window.setTimeout(run, 250);
-    return () => window.clearTimeout(id);
+    const id = globalThis.setTimeout(run, 250);
+    return () => globalThis.clearTimeout(id);
   }, [hydrateFromBackend]);
 
   return <>{children}</>;

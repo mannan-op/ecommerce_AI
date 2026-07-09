@@ -5,8 +5,9 @@ import { notFound, redirect } from "next/navigation";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { getAccessToken } from "@/lib/auth/session";
+import { getValidAccessToken } from "@/lib/auth/server-token";
 import { serverApi } from "@/lib/api/server";
+import type { OrderItem } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 interface PageProps {
@@ -42,7 +43,7 @@ export default async function OrderDetailPage({
 }: PageProps) {
   const { id } = await params;
   const { confirmed } = await searchParams;
-  const accessToken = await getAccessToken();
+  const accessToken = await getValidAccessToken();
 
   if (!accessToken) {
     redirect(`/login?redirect=/orders/${id}`);
@@ -118,7 +119,7 @@ export default async function OrderDetailPage({
           <section className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
             <h2 className="font-display text-2xl">Items</h2>
             <ul className="mt-6 divide-y divide-border">
-              {order.items.map((item) => (
+              {(order.items ?? []).map((item: OrderItem) => (
                 <li
                   key={item.id}
                   className="flex flex-wrap items-start justify-between gap-4 py-5 first:pt-0 last:pb-0"

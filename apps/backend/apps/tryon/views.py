@@ -5,11 +5,15 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.common.permissions import IsStaffUser
+from apps.common.throttling import StylistChatRateThrottle, TryOnRateThrottle
+from apps.notifications.services import notify_csr_status_to_customer
 from apps.tryon.models import CSRHandoff, TryOnJob
 from apps.tryon.serializers import (
     AdminCSRHandoffSerializer,
     CSRHandoffCreateSerializer,
     CSRHandoffSerializer,
+    StylistChatRequestSerializer,
+    StylistChatResponseSerializer,
     TryOnJobCreateSerializer,
     TryOnJobSerializer,
 )
@@ -17,6 +21,10 @@ from apps.tryon.services.factory import (
     get_tryon_provider,
     get_tryon_public_config,
     resolve_tryon_provider_name,
+)
+from apps.tryon.services.stylist_chat import (
+    chat_with_stylist,
+    get_stylist_chat_public_config,
 )
 from apps.tryon.tasks import enqueue_tryon_job
 
@@ -41,6 +49,7 @@ class TryOnJobViewSet(
 ):
     permission_classes = [IsAuthenticated]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
+    throttle_classes = [TryOnRateThrottle]
 
     def get_queryset(self):
         return TryOnJob.objects.filter(user=self.request.user).select_related(
@@ -81,7 +90,34 @@ class TryOnJobViewSet(
 
     @action(detail=False, methods=["get"], permission_classes=[AllowAny], url_path="config")
     def config(self, request):
-        return Response(get_tryon_public_config())
+        return Response({
+            **get_tryon_public_config(),
+            **get_stylist_chat_public_config(),
+        })
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="stylist-chat",
+        parser_classes=[parsers.JSONParser],
+        throttle_classes=[StylistChatRateThrottle],
+    )
+    def stylist_chat(self, request, pk=None):
+        job = self.get_object()
+        serializer = StylistChatRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reply = chat_with_stylist(
+            job,
+            serializer.validated_data["message"],
+            serializer.validated_data.get("history") or [],
+        )
+        output = StylistChatResponseSerializer(
+            {
+                "reply": reply,
+                "model": get_stylist_chat_public_config().get("stylist_model"),
+            }
+        )
+        return Response(output.data)
 
 
 class CSRHandoffViewSet(
@@ -119,3 +155,8 @@ class AdminCSRHandoffViewSet(
             "user",
             "assigned_to",
         )
+
+    def perform_update(self, serializer):
+        old_status = serializer.instance.status
+        handoff = serializer.save()
+        notify_csr_status_to_customer(handoff, old_status=old_status)

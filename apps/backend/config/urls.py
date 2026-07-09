@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import (
@@ -5,6 +6,7 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from rest_framework.permissions import IsAdminUser
 from rest_framework.routers import DefaultRouter
 
 from apps.accounts.views import (
@@ -16,6 +18,7 @@ from apps.accounts.views import (
     ThrottledTokenRefreshView,
 )
 from apps.cart.views import CartViewSet
+from apps.common.views import HealthCheckView
 from apps.catalog.admin_views import (
     AdminCategoryViewSet,
     AdminProductImageViewSet,
@@ -24,6 +27,8 @@ from apps.catalog.admin_views import (
 )
 from apps.catalog.views import CategoryViewSet, ProductViewSet
 from apps.orders.views import OrderViewSet
+from apps.orders.webhooks import StripeWebhookView
+from apps.notifications.views import NotificationViewSet
 from apps.tryon.views import AdminCSRHandoffViewSet, CSRHandoffViewSet, TryOnJobViewSet
 
 router = DefaultRouter()
@@ -36,23 +41,15 @@ router.register("admin/catalog/categories", AdminCategoryViewSet, basename="admi
 router.register("admin/catalog/products", AdminProductViewSet, basename="admin-product")
 router.register("admin/catalog/variants", AdminVariantViewSet, basename="admin-variant")
 router.register("admin/catalog/images", AdminProductImageViewSet, basename="admin-image")
+router.register("notifications", NotificationViewSet, basename="notification")
 router.register("tryon/jobs", TryOnJobViewSet, basename="tryon-job")
 router.register("tryon/csr", CSRHandoffViewSet, basename="tryon-csr")
 router.register("admin/tryon/csr", AdminCSRHandoffViewSet, basename="admin-tryon-csr")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path(
-        "api/docs/",
-        SpectacularSwaggerView.as_view(url_name="schema"),
-        name="swagger-ui",
-    ),
-    path(
-        "api/redoc/",
-        SpectacularRedocView.as_view(url_name="schema"),
-        name="redoc",
-    ),
+    path("api/health/", HealthCheckView.as_view(), name="health"),
+    path("api/webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
     path("api/auth/token/", EmailTokenObtainPairView.as_view(), name="token_obtain"),
     path(
         "api/auth/token/refresh/",
@@ -68,3 +65,33 @@ urlpatterns = [
     path("api/accounts/me/", CurrentUserView.as_view(), name="current-user"),
     path("api/", include(router.urls)),
 ]
+
+if settings.DEBUG:
+    urlpatterns += [
+        path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+        path(
+            "api/docs/",
+            SpectacularSwaggerView.as_view(url_name="schema"),
+            name="swagger-ui",
+        ),
+        path(
+            "api/redoc/",
+            SpectacularRedocView.as_view(url_name="redoc"),
+            name="redoc",
+        ),
+    ]
+else:
+    schema_view = SpectacularAPIView.as_view(permission_classes=[IsAdminUser])
+    swagger_view = SpectacularSwaggerView.as_view(
+        url_name="schema",
+        permission_classes=[IsAdminUser],
+    )
+    redoc_view = SpectacularRedocView.as_view(
+        url_name="schema",
+        permission_classes=[IsAdminUser],
+    )
+    urlpatterns += [
+        path("api/schema/", schema_view, name="schema"),
+        path("api/docs/", swagger_view, name="swagger-ui"),
+        path("api/redoc/", redoc_view, name="redoc"),
+    ]

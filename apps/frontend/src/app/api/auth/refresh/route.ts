@@ -2,12 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { createDjangoClient } from "@/lib/api/django";
-import {
-  ACCESS_TOKEN_COOKIE,
-  ACCESS_TOKEN_MAX_AGE,
-  COOKIE_OPTIONS,
-  REFRESH_TOKEN_COOKIE,
-} from "@/lib/auth/constants";
+import { applyRefreshedTokens } from "@/lib/auth/server-token";
+import { ACCESS_TOKEN_COOKIE, COOKIE_OPTIONS, REFRESH_TOKEN_COOKIE } from "@/lib/auth/constants";
 
 export async function POST() {
   const cookieStore = await cookies();
@@ -19,15 +15,13 @@ export async function POST() {
 
   try {
     const django = createDjangoClient();
-    const { data } = await django.post<{ access: string }>("/auth/token/refresh/", {
-      refresh,
-    });
+    const { data } = await django.post<{ access: string; refresh?: string }>(
+      "/auth/token/refresh/",
+      { refresh }
+    );
 
     const response = NextResponse.json({ ok: true });
-    response.cookies.set(ACCESS_TOKEN_COOKIE, data.access, {
-      ...COOKIE_OPTIONS,
-      maxAge: ACCESS_TOKEN_MAX_AGE,
-    });
+    applyRefreshedTokens(response, data);
     return response;
   } catch {
     const response = NextResponse.json(

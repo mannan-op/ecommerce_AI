@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "echo \"No frontend tests yet\" && exit 0"
+    "test": "node --experimental-strip-types --test src/lib/auth/auth-security.test.ts"
   },
   "dependencies": {
     "@ecommerce/types": "*",

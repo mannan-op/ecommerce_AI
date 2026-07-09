@@ -76,7 +76,6 @@ export const api = {
     checkout: (data: {
       shipping_address_id: string;
       idempotency_key: string;
-      payment_provider?: string;
     }) =>
       browserClient.post<CheckoutResponse>("/proxy/orders/checkout/", data),
     confirmPayment: (data: { order_id: string; provider_reference: string }) =>

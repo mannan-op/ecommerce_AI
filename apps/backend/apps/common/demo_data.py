@@ -21,11 +21,18 @@ DEMO_CATEGORIES = [
         "name": "Shawls & Dupattas",
         "description": "Embroidered dupattas, shawls, and seasonal wraps.",
     },
-    {
-        "slug": "mens-wear",
-        "name": "Men's Wear",
-        "description": "Kurtas, waistcoats, and shalwar kameez for men.",
-    },
+]
+
+# Removed from catalog — cleaned up when running seed_demo --clear
+LEGACY_DEMO_CATEGORY_SLUGS = ["mens-wear"]
+LEGACY_DEMO_PRODUCT_SLUGS = ["classic-shalwar-kameez", "waistcoat-velvet"]
+LEGACY_DEMO_SKUS = [
+    "MEN-SK-WHT-M",
+    "MEN-SK-WHT-L",
+    "MEN-SK-NVY-L",
+    "MEN-WC-BLK-M",
+    "MEN-WC-BLK-L",
+    "MEN-WC-MRN-M",
 ]
 
 DEMO_PRODUCTS = [
@@ -127,30 +134,6 @@ DEMO_PRODUCTS = [
         ],
     },
     {
-        "category": "mens-wear",
-        "slug": "classic-shalwar-kameez",
-        "name": "Classic Shalwar Kameez",
-        "description": "Tailored shalwar kameez in premium blended cotton.",
-        "image_color": (72, 108, 152),
-        "variants": [
-            {"sku": "MEN-SK-WHT-M", "price": "39.99", "fabric": "cotton", "color": "white", "size": "M", "stock": 20},
-            {"sku": "MEN-SK-WHT-L", "price": "39.99", "fabric": "cotton", "color": "white", "size": "L", "stock": 16},
-            {"sku": "MEN-SK-NVY-L", "price": "41.99", "fabric": "cotton", "color": "navy", "size": "L", "stock": 14},
-        ],
-    },
-    {
-        "category": "mens-wear",
-        "slug": "waistcoat-velvet",
-        "name": "Velvet Waistcoat",
-        "description": "Festive velvet waistcoat with front button closure.",
-        "image_color": (58, 42, 72),
-        "variants": [
-            {"sku": "MEN-WC-BLK-M", "price": "54.99", "fabric": "velvet", "color": "black", "size": "M", "stock": 10},
-            {"sku": "MEN-WC-BLK-L", "price": "54.99", "fabric": "velvet", "color": "black", "size": "L", "stock": 8},
-            {"sku": "MEN-WC-MRN-M", "price": "56.99", "fabric": "velvet", "color": "maroon", "size": "M", "stock": 6},
-        ],
-    },
-    {
         "category": "kurta",
         "slug": "silk-festive-kurta",
         "name": "Silk Festive Kurta",
@@ -184,8 +167,6 @@ DEMO_PRODUCT_IMAGES: dict[str, str] = {
     "khaddar-winter-collection": "chocolate-brown.png",
     "chiffon-embroidered-dupatta": "mauve-festive.png",
     "pashmina-shawl": "chocolate-brown.png",
-    "classic-shalwar-kameez": "black-silk.png",
-    "waistcoat-velvet": "black-silk.png",
     "silk-festive-kurta": "black-silk.png",
     "sale-lawn-basic": "green-lawn.png",
 }

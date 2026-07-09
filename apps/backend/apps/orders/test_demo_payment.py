@@ -51,7 +51,6 @@ class DemoCheckoutTests(TestCase):
             {
                 "shipping_address_id": str(self.address.id),
                 "idempotency_key": "demo-key-1",
-                "payment_provider": "demo",
             },
             format="json",
         )

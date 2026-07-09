@@ -53,9 +53,15 @@ services:
       /bin/sh -c "
       mc alias set local http://minio:9000 minioadmin minioadmin;
       mc mb local/ecommerce-media --ignore-existing;
-      mc anonymous set download local/ecommerce-media;
+      if [ \"$$S3_PRIVATE_MEDIA\" = \"true\" ]; then
+        mc anonymous set none local/ecommerce-media;
+      else
+        mc anonymous set download local/ecommerce-media;
+      fi;
       exit 0;
       "
+    environment:
+      S3_PRIVATE_MEDIA: "false"
 
   backend:
     build:
@@ -79,6 +85,7 @@ services:
       AWS_S3_URL_PROTOCOL: "http:"
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend
       DEFAULT_PAYMENT_PROVIDER: demo
+      S3_PRIVATE_MEDIA: "false"
       DEFAULT_TRYON_PROVIDER: auto
       PAYMENT_CURRENCY: usd
       EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
@@ -89,6 +96,63 @@ services:
         condition: service_healthy
       createbuckets:
         condition: service_completed_successfully
+    volumes:
+      - ./apps/backend:/app
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DJANGO_API_URL: http://backend:8000/api
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NODE_ENV: production
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    command: celery -A config beat -l info
+    env_file:
+      - ./apps/backend/.env
+    environment:
+      DATABASE_URL: postgres://ecommerce:ecommerce@db:5432/ecommerce
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      USE_S3: "True"
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_STORAGE_BUCKET_NAME: ecommerce-media
+      AWS_S3_ENDPOINT_URL: http://minio:9000
+      AWS_S3_CUSTOM_DOMAIN: localhost:9000/ecommerce-media
+      AWS_S3_URL_PROTOCOL: "http:"
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend,celery
+      DEFAULT_TRYON_PROVIDER: auto
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
     volumes:
       - ./apps/backend:/app
 
@@ -124,6 +188,12 @@ services:
         condition: service_started
     volumes:
       - ./apps/backend:/app
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:

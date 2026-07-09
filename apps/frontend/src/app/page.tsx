@@ -12,9 +12,9 @@ import { Testimonials } from "@/components/home/Testimonials";
 import { serverApi } from "@/lib/api/server";
 
 export const metadata: Metadata = {
-  title: "Luxury fashion for the modern wardrobe",
+  title: "Luxury fashion for the modern woman",
   description:
-    "Discover curated Pakistani luxury fashion — lawn, silk, and artisanal pret collections.",
+    "Discover curated Pakistani women's luxury fashion — lawn, silk, and artisanal pret collections.",
 };
 
 export default async function HomePage() {

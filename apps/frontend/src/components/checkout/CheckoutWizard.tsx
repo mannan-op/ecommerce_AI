@@ -90,7 +90,6 @@ export function CheckoutWizard() {
       const { data } = await api.orders.checkout({
         shipping_address_id: selectedAddressId,
         idempotency_key: idempotencyKey,
-        payment_provider: paymentProvider,
       });
       setOrderId(data.order.id);
       setProviderRef(data.provider_reference);

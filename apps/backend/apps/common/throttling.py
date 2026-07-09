@@ -11,3 +11,11 @@ class AuthUserRateThrottle(UserRateThrottle):
 
 class BurstAnonRateThrottle(AnonRateThrottle):
     scope = "burst"
+
+
+class TryOnRateThrottle(UserRateThrottle):
+    scope = "tryon"
+
+
+class StylistChatRateThrottle(UserRateThrottle):
+    scope = "stylist_chat"

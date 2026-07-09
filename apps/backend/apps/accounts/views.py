@@ -10,6 +10,7 @@ from apps.accounts.models import Address, User
 from apps.accounts.serializers import (
     AddressSerializer,
     RegisterSerializer,
+    StaffUserSerializer,
     UserSerializer,
 )
 from apps.cart.services import merge_session_cart_into_user
@@ -24,8 +25,12 @@ class RegisterView(generics.CreateAPIView):
 
 
 class CurrentUserView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.user.is_staff:
+            return StaffUserSerializer
+        return UserSerializer
 
     def get_object(self):
         return self.request.user

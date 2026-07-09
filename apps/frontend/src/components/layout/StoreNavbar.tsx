@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
@@ -175,6 +176,8 @@ export function StoreNavbar({ categories = [] }: StoreNavbarProps) {
                   )}
                 </button>
               ) : null}
+
+              <NotificationBell />
 
               <Link
                 href="/shop"

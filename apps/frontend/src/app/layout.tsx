@@ -31,11 +31,11 @@ const display = Cormorant_Garamond({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "MAISON — Luxury Fashion",
+    default: "MAISON — Women's Luxury Fashion",
     template: "%s | MAISON",
   },
   description:
-    "Premium Pakistani luxury fashion — curated collections, artisanal fabrics, and timeless design.",
+    "Premium Pakistani women's luxury fashion — curated lawn, silk, and artisanal pret collections.",
 };
 
 const getCachedCategories = unstable_cache(

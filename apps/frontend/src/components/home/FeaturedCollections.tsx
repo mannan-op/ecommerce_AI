@@ -9,7 +9,6 @@ const CATEGORY_IMAGES: Record<string, string> = {
   "lawn-suits": "/images/categories/lawn-suits.png",
   "unstitched-fabric": "/images/categories/unstitched-fabric.png",
   "shawls-dupattas": "/images/categories/shawls-dupattas.png",
-  "mens-wear": "/images/categories/mens-wear.png",
 };
 
 interface FeaturedCollectionsProps {

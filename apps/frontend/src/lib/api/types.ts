@@ -26,6 +26,8 @@ export type PaginatedOrderList = components["schemas"]["PaginatedOrderList"];
 /** Order detail with nested address (OpenAPI may lag behind serializer). */
 export type OrderDetail = Omit<Order, "shipping_address"> & {
   shipping_address: Address;
+  items: OrderItem[];
+  payment: Payment;
   subtotal?: string;
   shipping_cost?: string;
   tax?: string;
@@ -37,7 +39,6 @@ export type TokenObtainPairRequest =
   components["schemas"]["TokenObtainPairRequest"];
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
 export type AddCartItemRequest = components["schemas"]["AddCartItemRequest"];
-export type CreateOrderRequest = components["schemas"]["CreateOrderRequest"];
 export type AddressRequest = components["schemas"]["AddressRequest"];
 
 export class ApiError extends Error {

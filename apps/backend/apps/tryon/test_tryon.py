@@ -1,4 +1,5 @@
 import io
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -175,3 +176,47 @@ def test_admin_csr_queue(staff_user, customer, product):
     )
     assert patch.status_code == status.HTTP_200_OK
     assert patch.data["status"] == "contacted"
+
+
+@pytest.mark.django_db
+@patch("apps.tryon.services.stylist_chat.settings.GROQ_API_KEY", "test-groq-key")
+@patch("apps.tryon.services.stylist_chat.urllib.request.urlopen")
+def test_stylist_chat_on_tryon_job(mock_urlopen, customer, product):
+    mock_response = MagicMock()
+    mock_response.read.return_value = (
+        b'{"choices":[{"message":{"content":"Pair with nude heels for an elegant look."}}]}'
+    )
+    mock_response.__enter__.return_value = mock_response
+    mock_urlopen.return_value = mock_response
+
+    job = TryOnJob.objects.create(
+        user=customer,
+        product=product,
+        user_photo=_make_image(),
+        status=TryOnJob.Status.COMPLETED,
+        consent_given=True,
+        provider="demo",
+    )
+
+    client = APIClient()
+    client.force_authenticate(user=customer)
+    response = client.post(
+        f"/api/tryon/jobs/{job.id}/stylist-chat/",
+        {
+            "message": "What shoes go with this?",
+            "history": [],
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "nude heels" in response.data["reply"].lower()
+
+
+@pytest.mark.django_db
+def test_tryon_config_includes_stylist_flags(customer):
+    client = APIClient()
+    response = client.get("/api/tryon/jobs/config/")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "stylist_chat_enabled" in response.data

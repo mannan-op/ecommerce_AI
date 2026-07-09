@@ -15,8 +15,13 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "phone",
             "is_active",
-            "is_staff",
         )
+        read_only_fields = ("id", "email", "is_active")
+
+
+class StaffUserSerializer(UserSerializer):
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ("is_staff",)
         read_only_fields = ("id", "email", "is_active", "is_staff")
 
 

@@ -2,6 +2,7 @@ from django.db import transaction
 from django.http import HttpRequest
 
 from apps.cart.models import Cart, CartItem
+from apps.orders.services.inventory import validate_cart_stock
 
 
 def get_cart_for_request(request: HttpRequest) -> Cart:
@@ -48,4 +49,9 @@ def merge_session_cart_into_user(session_key: str | None, user) -> Cart:
 
     session_cart.items.all().delete()
     session_cart.delete()
+
+    merged_items = list(user_cart.items.select_related("variant", "variant__product"))
+    if merged_items:
+        validate_cart_stock(merged_items)
+
     return user_cart

@@ -7,6 +7,7 @@ import { StoreFooter } from "@/components/layout/StoreFooter";
 import { StoreNavbar } from "@/components/layout/StoreNavbar";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { CartProvider } from "@/components/providers/CartProvider";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import type { Category } from "@/lib/api/types";
 
 interface AppShellProps {
@@ -24,10 +25,12 @@ export function AppShell({ children, categories = [] }: AppShellProps) {
         children
       ) : (
         <CartProvider>
-          <AnnouncementBar />
-          <StoreNavbar categories={categories} />
-          <main className="min-h-screen">{children}</main>
-          <StoreFooter />
+          <NotificationProvider>
+            <AnnouncementBar />
+            <StoreNavbar categories={categories} />
+            <main className="min-h-screen">{children}</main>
+            <StoreFooter />
+          </NotificationProvider>
         </CartProvider>
       )}
     </AuthProvider>

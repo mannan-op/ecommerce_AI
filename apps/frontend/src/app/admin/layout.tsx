@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AdminShell } from "@/components/admin/AdminShell";
-import { getAccessToken } from "@/lib/auth/session";
+import { getValidAccessToken } from "@/lib/auth/server-token";
 import { serverApi } from "@/lib/api/server";
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const accessToken = await getAccessToken();
+  const accessToken = await getValidAccessToken();
   if (!accessToken) {
     redirect("/login?redirect=/admin");
   }

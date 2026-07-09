@@ -14,6 +14,9 @@ from apps.common.demo_data import (
     DEMO_PRODUCT_IMAGES,
     DEMO_PRODUCTS,
     DEMO_USERS,
+    LEGACY_DEMO_CATEGORY_SLUGS,
+    LEGACY_DEMO_PRODUCT_SLUGS,
+    LEGACY_DEMO_SKUS,
 )
 
 SEED_ASSETS_DIR = Path(__file__).resolve().parents[4] / "seed_assets" / "products"
@@ -83,12 +86,12 @@ class Command(BaseCommand):
         self.stdout.write("  Admin:    admin@example.com / admin12345")
 
     def _clear_demo_data(self):
-        demo_slugs = [p["slug"] for p in DEMO_PRODUCTS]
+        demo_slugs = [p["slug"] for p in DEMO_PRODUCTS] + LEGACY_DEMO_PRODUCT_SLUGS
         demo_skus = [
             v["sku"] for p in DEMO_PRODUCTS for v in p["variants"]
-        ]
+        ] + LEGACY_DEMO_SKUS
         demo_emails = [u["email"] for u in DEMO_USERS]
-        category_slugs = [c["slug"] for c in DEMO_CATEGORIES]
+        category_slugs = [c["slug"] for c in DEMO_CATEGORIES] + LEGACY_DEMO_CATEGORY_SLUGS
 
         ProductImage.objects.filter(product__slug__in=demo_slugs).delete()
         ProductVariant.objects.filter(sku__in=demo_skus).delete()
