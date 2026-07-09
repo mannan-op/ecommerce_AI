@@ -54,6 +54,11 @@ def resolve_tryon_provider_name(name: str | None = None) -> str:
     """Pick provider from explicit name or auto-detect (free providers first)."""
     provider_name = name or getattr(settings, "DEFAULT_TRYON_PROVIDER", "auto")
     if provider_name != "auto":
+        if provider_name == "huggingface" and not getattr(settings, "HF_TOKEN", ""):
+            raise BusinessError(
+                "HF_TOKEN is required for Hugging Face try-on.",
+                code="TRYON_CONFIG_MISSING",
+            )
         return provider_name
 
     prefer_free = getattr(settings, "TRYON_PREFER_FREE", True)
@@ -65,7 +70,10 @@ def resolve_tryon_provider_name(name: str | None = None) -> str:
         return "replicate"
     if getattr(settings, "HF_TOKEN", "") and _gradio_client_installed():
         return "huggingface"
-    return "demo"
+    raise BusinessError(
+        "No try-on provider configured. Set DEFAULT_TRYON_PROVIDER=huggingface and HF_TOKEN.",
+        code="TRYON_CONFIG_MISSING",
+    )
 
 
 def get_tryon_provider(name: str | None = None) -> TryOnProvider:

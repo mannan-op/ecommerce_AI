@@ -2,8 +2,10 @@ import axios, { type AxiosError, type AxiosInstance } from "axios";
 
 import { ApiError } from "./types";
 
-const DJANGO_API_URL =
-  process.env.DJANGO_API_URL ?? "http://localhost:8000/api";
+/** Bracket access avoids Next.js inlining a build-time fallback into the standalone bundle. */
+export function getDjangoApiUrl(): string {
+  return process.env["DJANGO_API_URL"] ?? "http://localhost:8000/api";
+}
 
 function isRetryableNetworkError(error: AxiosError): boolean {
   const code = error.code;
@@ -51,7 +53,7 @@ function attachErrorInterceptor(instance: AxiosInstance) {
 /** Server-side Axios client — talks directly to Django. */
 export function createDjangoClient(accessToken?: string): AxiosInstance {
   const client = axios.create({
-    baseURL: DJANGO_API_URL,
+    baseURL: getDjangoApiUrl(),
     headers: {
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),

@@ -18,8 +18,8 @@ export function normalizeMediaUrl(
 
   if (normalized.startsWith("/media/")) {
     const apiBase =
-      process.env.NEXT_PUBLIC_DJANGO_API_URL ??
-      process.env.DJANGO_API_URL ??
+      process.env["NEXT_PUBLIC_DJANGO_API_URL"] ??
+      process.env["DJANGO_API_URL"] ??
       "http://localhost:8000/api";
     const origin = apiBase.replace(/\/api\/?$/, "");
     normalized = `${origin}${normalized}`;

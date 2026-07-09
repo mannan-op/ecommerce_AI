@@ -10,6 +10,12 @@ class SendGridEmailBackend(EmailBackend):
     def send_order_confirmation(self, *, order, user) -> bool:
         return SMTPEmailBackend().send_order_confirmation(order=order, user=user)
 
+    def send_tryon_abandoned_followup(self, *, job, user) -> bool:
+        return SMTPEmailBackend().send_tryon_abandoned_followup(job=job, user=user)
+
+    def send_tryon_abandoned_staff_alert(self, *, job) -> bool:
+        return SMTPEmailBackend().send_tryon_abandoned_staff_alert(job=job)
+
 
 def get_email_backend() -> EmailBackend:
     provider = getattr(settings, "EMAIL_PROVIDER", "smtp")

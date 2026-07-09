@@ -1,0 +1,19 @@
+{{ site_name }} — Your try-on is waiting
+========================================
+
+Hi {{ customer_name }},
+
+You recently tried on {{ product.name }} in our virtual atelier — and it looked beautiful on you.
+
+{% if variant_label %}{{ variant_label }}
+{% endif %}{% if price_display %}Price: {{ price_display }}
+{% endif %}
+{% if tryon_result_url %}Your try-on preview: {{ tryon_result_url }}
+{% endif %}
+Shop this piece: {{ product_url }}
+
+Need styling advice? Reply to this email or use "Speak with a stylist" on the product page.
+
+Browse the collection: {{ shop_url }}
+
+— {{ site_name }}

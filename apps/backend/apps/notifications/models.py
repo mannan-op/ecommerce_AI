@@ -13,6 +13,8 @@ class Notification(models.Model):
         ORDER_CANCELLED = "order.cancelled", "Order cancelled"
         TRYON_COMPLETED = "tryon.completed", "Try-on ready"
         TRYON_FAILED = "tryon.failed", "Try-on failed"
+        TRYON_ABANDONED = "tryon.abandoned", "Try-on abandoned"
+        TRYON_ABANDONED_STAFF = "tryon.abandoned.staff", "Try-on lead (staff)"
         CSR_CREATED = "csr.created", "Stylist request"
         CSR_CONTACTED = "csr.contacted", "Stylist contacted"
         CSR_RESOLVED = "csr.resolved", "Stylist resolved"

@@ -112,6 +112,49 @@ def notify_tryon_failed(job) -> None:
     )
 
 
+def notify_tryon_abandoned(job) -> None:
+    product_name = job.product.name
+    notify(
+        user=job.user,
+        event_type=Notification.EventType.TRYON_ABANDONED,
+        title=f"Your {product_name} try-on is waiting",
+        body=(
+            f"You looked wonderful in {product_name}. "
+            "It's still available — complete your MAISON look before it sells out."
+        ),
+        action_url=f"/products/{job.product.slug}",
+        payload={
+            "tryon_job_id": str(job.id),
+            "product_slug": job.product.slug,
+            "product_name": product_name,
+        },
+        dedupe_key=f"tryon.abandoned:{job.id}",
+    )
+
+
+def notify_tryon_abandoned_for_staff(job) -> None:
+    product_name = job.product.name
+    customer_label = job.user.get_full_name() or job.user.email
+    staff_users = User.objects.filter(is_staff=True, is_active=True)
+    for staff in staff_users:
+        notify(
+            user=staff,
+            event_type=Notification.EventType.TRYON_ABANDONED_STAFF,
+            title="Try-on lead — no purchase yet",
+            body=(
+                f"{customer_label} ({job.user.email}) tried {product_name} "
+                "but hasn't ordered yet. A follow-up email was sent."
+            ),
+            action_url="/admin/tryon",
+            payload={
+                "tryon_job_id": str(job.id),
+                "customer_email": job.user.email,
+                "product_slug": job.product.slug,
+            },
+            dedupe_key=f"tryon.abandoned.staff:{job.id}:{staff.id}",
+        )
+
+
 def notify_csr_created_for_staff(handoff) -> None:
     product_name = handoff.tryon_job.product.name
     staff_users = User.objects.filter(is_staff=True, is_active=True)

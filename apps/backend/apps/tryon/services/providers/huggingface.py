@@ -9,8 +9,24 @@ from apps.tryon.services.providers.base import TryOnProvider, TryOnResult
 logger = logging.getLogger(__name__)
 
 
+def resolve_hf_space_src(space_id: str) -> str:
+    """
+    Direct Gradio Space URL avoids huggingface_hub DNS lookup (space_info API).
+    Slug rule: yisol/IDM-VTON -> https://yisol-idm-vton.hf.space
+    """
+    explicit = getattr(settings, "TRYON_HF_SPACE_URL", "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    if space_id.startswith(("http://", "https://")):
+        return space_id.rstrip("/")
+    slug = space_id.strip("/").replace("/", "-").lower()
+    return f"https://{slug}.hf.space"
+
+
 def _create_gradio_client(space_id: str, hf_token: str):
     from gradio_client import Client
+
+    space_src = resolve_hf_space_src(space_id)
 
     # HF Spaces can be slow on cold start; allow longer connect/read timeouts.
     client_kwargs: dict = {}
@@ -24,10 +40,10 @@ def _create_gradio_client(space_id: str, hf_token: str):
         pass
 
     try:
-        return Client(space_id, hf_token=hf_token, **client_kwargs)
+        return Client(space_src, hf_token=hf_token, **client_kwargs)
     except TypeError:
         # gradio-client 2.x uses `token` instead of `hf_token`
-        return Client(space_id, token=hf_token, **client_kwargs)
+        return Client(space_src, token=hf_token, **client_kwargs)
 
 
 class HuggingFaceTryOnProvider(TryOnProvider):
@@ -82,7 +98,7 @@ class HuggingFaceTryOnProvider(TryOnProvider):
                 garm_img=handle_file(garment_path),
                 garment_des=product_name[:200] or "garment",
                 is_checked=True,
-                is_checked_crop=True,
+                is_checked_crop=False,
                 denoise_steps=30,
                 seed=42,
                 api_name="/tryon",
@@ -114,7 +130,7 @@ class HuggingFaceTryOnProvider(TryOnProvider):
         except Exception as exc:  # noqa: BLE001
             logger.exception("Hugging Face try-on failed")
             message = str(exc)
-            if "404" in message:
+            if "404" in message or "page not found" in message.lower():
                 message = (
                     "Hugging Face try-on space unavailable (404). "
                     "The space may be sleeping — wait 30s and try again."
@@ -123,6 +139,11 @@ class HuggingFaceTryOnProvider(TryOnProvider):
                 message = (
                     "Could not reach Hugging Face (network/SSL timeout). "
                     "Check Docker outbound HTTPS, then retry in 30s."
+                )
+            elif "name or service not known" in message.lower() or "errno -2" in message.lower():
+                message = (
+                    "Docker could not resolve Hugging Face (DNS error). "
+                    "Restart Docker or set TRYON_HF_SPACE_URL in .env."
                 )
             return TryOnResult(success=False, error_message=message)
         finally:

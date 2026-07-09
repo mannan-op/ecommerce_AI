@@ -23,9 +23,16 @@ test("proxy allowlist permits storefront routes", () => {
   assert.doesNotThrow(() => assertProxyPathAllowed(["tryon", "jobs"]));
 });
 
-test("proxy allowlist blocks admin and auth paths", () => {
+test("proxy allowlist permits staff admin routes", () => {
+  assert.doesNotThrow(() =>
+    assertProxyPathAllowed(["admin", "catalog", "products"])
+  );
+  assert.doesNotThrow(() => assertProxyPathAllowed(["admin", "tryon", "csr"]));
+});
+
+test("proxy allowlist blocks unknown admin areas and auth paths", () => {
   assert.throws(
-    () => assertProxyPathAllowed(["admin", "catalog", "products"]),
+    () => assertProxyPathAllowed(["admin", "accounts"]),
     ProxyPathError
   );
   assert.throws(() => assertProxyPathAllowed(["auth", "token"]), ProxyPathError);

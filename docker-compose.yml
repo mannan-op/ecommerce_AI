@@ -67,6 +67,9 @@ services:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8000:8000"
     env_file:
@@ -87,9 +90,10 @@ services:
       DEFAULT_PAYMENT_PROVIDER: demo
       S3_PRIVATE_MEDIA: "false"
       DEFAULT_TRYON_PROVIDER: huggingface
+      TRYON_HF_SPACE_URL: https://yisol-idm-vton.hf.space
+      TRYON_FALLBACK_TO_DEMO: "false"
       THROTTLE_TRYON: "60/hour"
       PAYMENT_CURRENCY: usd
-      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
     depends_on:
       db:
         condition: service_healthy
@@ -118,6 +122,7 @@ services:
       dockerfile: apps/frontend/Dockerfile
       args:
         NEXT_IMAGE_UNOPTIMIZED: "true"
+        DJANGO_API_URL: http://backend:8000/api
     ports:
       - "3000:3000"
     environment:
@@ -165,6 +170,9 @@ services:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     command: celery -A config worker -l info
     env_file:
       - ./apps/backend/.env
@@ -182,6 +190,8 @@ services:
       AWS_S3_URL_PROTOCOL: "http:"
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,backend,celery
       DEFAULT_TRYON_PROVIDER: huggingface
+      TRYON_HF_SPACE_URL: https://yisol-idm-vton.hf.space
+      TRYON_FALLBACK_TO_DEMO: "false"
     depends_on:
       db:
         condition: service_healthy

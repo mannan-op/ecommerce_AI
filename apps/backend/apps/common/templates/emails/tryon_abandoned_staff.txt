@@ -1,0 +1,12 @@
+Try-on lead alert — {{ site_name }}
+====================================
+
+A customer completed a virtual try-on but has not purchased yet.
+
+Customer: {{ customer.get_full_name|default:customer.email }} ({{ customer.email }})
+Product:  {{ product.name }}
+Try-on:   {{ job.completed_at|date:"F j, Y, g:i A" }}
+
+Review in admin: {{ admin_url }}
+
+A recovery email was also sent to the customer.

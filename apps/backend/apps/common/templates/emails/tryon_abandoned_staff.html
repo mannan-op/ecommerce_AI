@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: system-ui, sans-serif; color: #1a1a1a; line-height: 1.6;">
+  <h2>Try-on lead — no purchase yet</h2>
+  <p>A customer completed a virtual try-on but has not placed an order.</p>
+  <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
+    <tr><td><strong>Customer</strong></td><td>{{ customer.get_full_name|default:customer.email }} ({{ customer.email }})</td></tr>
+    <tr><td><strong>Product</strong></td><td>{{ product.name }}</td></tr>
+    <tr><td><strong>Try-on completed</strong></td><td>{{ job.completed_at|date:"F j, Y, g:i A" }}</td></tr>
+  </table>
+  <p>
+    <a href="{{ admin_url }}">Open stylist queue in admin</a>
+  </p>
+  <p style="color:#666;font-size:14px;">A recovery email was also sent to the customer.</p>
+</body>
+</html>

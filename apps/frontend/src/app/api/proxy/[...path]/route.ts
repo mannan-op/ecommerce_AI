@@ -2,9 +2,10 @@ import { type Method } from "axios";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { createDjangoClient } from "@/lib/api/django";
+import { createDjangoClient, getDjangoApiUrl } from "@/lib/api/django";
 import {
   assertProxyPathAllowed,
+  isAdminProxyPath,
   ProxyPathError,
 } from "@/lib/api/proxy-allowlist";
 import {
@@ -14,9 +15,6 @@ import {
   REFRESH_TOKEN_COOKIE,
   SESSION_COOKIE,
 } from "@/lib/auth/constants";
-
-const DJANGO_API_URL =
-  process.env.DJANGO_API_URL ?? "http://localhost:8000/api";
 
 async function refreshAccessToken(refresh: string): Promise<string | null> {
   try {
@@ -28,6 +26,17 @@ async function refreshAccessToken(refresh: string): Promise<string | null> {
     return data.access;
   } catch {
     return null;
+  }
+}
+
+async function isStaffUser(access: string | undefined): Promise<boolean> {
+  if (!access) return false;
+  try {
+    const django = createDjangoClient(access);
+    const { data } = await django.get<{ is_staff?: boolean }>("/accounts/me/");
+    return Boolean(data.is_staff);
+  } catch {
+    return false;
   }
 }
 
@@ -71,8 +80,12 @@ async function proxyRequest(
     throw error;
   }
 
+  if (isAdminProxyPath(path) && !(await isStaffUser(access))) {
+    return NextResponse.json({ detail: "Staff access required" }, { status: 403 });
+  }
+
   const targetPath = path.join("/");
-  const url = `${DJANGO_API_URL}/${targetPath}/`;
+  const url = `${getDjangoApiUrl()}/${targetPath}/`;
   const search = request.nextUrl.search;
   const fullUrl = `${url}${search}`;
 

@@ -4,6 +4,7 @@ import tempfile
 from datetime import timedelta
 
 from celery import shared_task
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
@@ -51,6 +52,22 @@ def _local_photo_path(job: TryOnJob) -> tuple[str, bool]:
     return tmp.name, True
 
 
+def _is_network_error(message: str) -> bool:
+    lowered = message.lower()
+    return any(
+        marker in lowered
+        for marker in (
+            "name or service not known",
+            "errno -2",
+            "connecterror",
+            "connect timeout",
+            "handshake",
+            "timed out",
+            "network is unreachable",
+        )
+    )
+
+
 @shared_task(bind=True, max_retries=2, default_retry_delay=10)
 def process_tryon_job(self, job_id: str) -> None:
     try:
@@ -80,6 +97,25 @@ def process_tryon_job(self, job_id: str) -> None:
             product=job.product,
             garment_category=_garment_category(job.product, job.provider),
         )
+        if (
+            result
+            and not result.success
+            and job.provider != "demo"
+            and getattr(settings, "TRYON_FALLBACK_TO_DEMO", True)
+            and _is_network_error(result.error_message or "")
+        ):
+            logger.warning(
+                "Try-on provider %s hit a network error; falling back to demo",
+                job.provider,
+            )
+            demo = get_tryon_provider("demo")
+            result = demo.generate(
+                user_photo_path=photo_path,
+                garment_image_url=job.garment_image_url,
+                product_name=job.product.name,
+                product=job.product,
+                garment_category=_garment_category(job.product, "demo"),
+            )
     finally:
         if is_temp:
             os.unlink(photo_path)
@@ -165,3 +201,10 @@ def purge_expired_user_photos(retention_days: int) -> int:
             job.save(update_fields=["user_photo", "updated_at"])
             count += 1
     return count
+
+
+@shared_task
+def send_tryon_abandonment_followups_task() -> int:
+    from apps.tryon.services.abandonment import process_abandoned_tryon_followups
+
+    return process_abandoned_tryon_followups()

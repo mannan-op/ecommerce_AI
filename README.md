@@ -44,6 +44,20 @@ HF_TOKEN=hf_your_token_here
 
 # Optional — AI stylist chat (https://console.groq.com/keys)
 GROQ_API_KEY=gsk_your_key_here
+
+# Gmail delivery (order confirmations + try-on lead emails)
+# 1. Enable 2-Step Verification on your Google account
+# 2. Create an App Password: https://myaccount.google.com/apppasswords
+# 3. Set these in apps/backend/.env (use the App Password, not your login password)
+EMAIL_HOST_USER=your.name@gmail.com
+EMAIL_HOST_PASSWORD=your-16-char-app-password
+DEFAULT_FROM_EMAIL=your.name@gmail.com
+```
+
+Test Gmail after `docker compose up -d`:
+
+```bash
+docker compose exec backend python manage.py send_test_email your.name@gmail.com
 ```
 
 Never commit `.env`.
@@ -119,6 +133,12 @@ docker compose exec backend python manage.py migrate
 
 # Django shell
 docker compose exec backend python manage.py shell
+
+# Test Gmail SMTP delivery
+docker compose exec backend python manage.py send_test_email your@gmail.com
+
+# Manually run try-on lead emails (override wait window)
+docker compose exec backend python manage.py send_tryon_abandonment_followups --seconds 0
 ```
 
 ---

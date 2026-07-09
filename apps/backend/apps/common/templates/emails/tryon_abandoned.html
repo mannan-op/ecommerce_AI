@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Your {{ product.name }} try-on — {{ site_name }}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f2ed;font-family:Georgia,'Times New Roman',serif;-webkit-font-smoothing:antialiased;">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    You looked wonderful in {{ product.name }}. Complete your look before it sells out.
+  </div>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f5f2ed;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #e8e4de;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color:#1a1a1a;padding:28px 32px;">
+              <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px;letter-spacing:0.08em;color:#faf8f5;">
+                {{ site_name }}<span style="color:#c9a962;">.</span>
+              </p>
+              <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:#9a9590;">
+                Virtual Atelier
+              </p>
+            </td>
+          </tr>
+
+          <!-- Hero copy -->
+          <tr>
+            <td style="padding:40px 40px 24px;text-align:center;">
+              <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#c9a962;">
+                Your try-on is waiting
+              </p>
+              <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:400;line-height:1.25;color:#1a1a1a;">
+                Still thinking about<br>{{ product.name }}?
+              </h1>
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.7;color:#5c5650;">
+                Hi {{ customer_name }}, you recently stepped into our virtual atelier and tried on
+                <strong style="color:#1a1a1a;">{{ product.name }}</strong>.
+                The piece is still available — and it looked beautiful on you.
+              </p>
+            </td>
+          </tr>
+
+          {% if tryon_result_url %}
+          <!-- Try-on preview -->
+          <tr>
+            <td style="padding:0 40px 24px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#faf8f5;border:1px solid #e8e4de;">
+                <tr>
+                  <td style="padding:20px;text-align:center;">
+                    <p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#8a847c;">
+                      Your MAISON look
+                    </p>
+                    <img
+                      src="{{ tryon_result_url }}"
+                      alt="Your virtual try-on of {{ product.name }}"
+                      width="320"
+                      style="display:block;margin:0 auto;max-width:100%;height:auto;border:1px solid #e8e4de;"
+                    />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+
+          <!-- Product card -->
+          <tr>
+            <td style="padding:0 40px 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border:1px solid #e8e4de;">
+                <tr>
+                  {% if product_image_url %}
+                  <td width="140" style="padding:0;vertical-align:top;background-color:#faf8f5;">
+                    <img
+                      src="{{ product_image_url }}"
+                      alt="{{ product.name }}"
+                      width="140"
+                      style="display:block;width:140px;height:auto;"
+                    />
+                  </td>
+                  {% endif %}
+                  <td style="padding:24px 28px;vertical-align:top;">
+                    {% if category_name %}
+                    <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#c9a962;">
+                      {{ category_name }}
+                    </p>
+                    {% endif %}
+                    <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:1.3;color:#1a1a1a;">
+                      {{ product.name }}
+                    </p>
+                    {% if variant_label %}
+                    <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#6b6560;">
+                      {{ variant_label }}
+                    </p>
+                    {% endif %}
+                    {% if price_display %}
+                    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:18px;color:#1a1a1a;">
+                      {{ price_display }}
+                    </p>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTAs -->
+          <tr>
+            <td align="center" style="padding:0 40px 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="border-radius:2px;background-color:#1a1a1a;">
+                    <a
+                      href="{{ product_url }}"
+                      style="display:inline-block;padding:16px 36px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#faf8f5;text-decoration:none;"
+                    >
+                      Shop this piece
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding-top:14px;">
+                    <a
+                      href="{{ product_url }}"
+                      style="font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:0.08em;color:#6b6560;text-decoration:underline;"
+                    >
+                      View full product details
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Stylist help -->
+          <tr>
+            <td style="padding:0 40px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#faf8f5;border-left:3px solid #c9a962;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#1a1a1a;">
+                      Need styling advice?
+                    </p>
+                    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#5c5650;">
+                      Reply to this email or tap <strong>Speak with a stylist</strong> on the product page —
+                      our team can help with sizing, pairing, and fabric care.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:28px 40px;background-color:#faf8f5;border-top:1px solid #e8e4de;">
+              <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#8a847c;">
+                You received this because you used virtual try-on at {{ site_name }}.
+              </p>
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;">
+                <a href="{{ shop_url }}" style="color:#6b6560;text-decoration:underline;">Browse the collection</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

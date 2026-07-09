@@ -256,6 +256,8 @@ DEFAULT_TRYON_PROVIDER = env("DEFAULT_TRYON_PROVIDER", default="auto")
 TRYON_PREFER_FREE = env.bool("TRYON_PREFER_FREE", default=True)
 HF_TOKEN = env("HF_TOKEN", default="").strip()
 TRYON_HF_SPACE = env("TRYON_HF_SPACE", default="yisol/IDM-VTON")
+TRYON_HF_SPACE_URL = env("TRYON_HF_SPACE_URL", default="https://yisol-idm-vton.hf.space")
+TRYON_FALLBACK_TO_DEMO = env.bool("TRYON_FALLBACK_TO_DEMO", default=False)
 FAL_KEY = env("FAL_KEY", default="").strip()
 TRYON_FAL_MODEL = env("TRYON_FAL_MODEL", default="fal-ai/fashn/tryon/v1.6")
 TRYON_FAL_MODE = env("TRYON_FAL_MODE", default="balanced")
@@ -266,6 +268,10 @@ TRYON_REPLICATE_MODEL = env(
 )
 TRYON_PHOTO_RETENTION_DAYS = env.int("TRYON_PHOTO_RETENTION_DAYS", default=30)
 TRYON_SYNC_PROCESSING = env.bool("TRYON_SYNC_PROCESSING", default=False)
+TRYON_ABANDONMENT_ENABLED = env.bool("TRYON_ABANDONMENT_ENABLED", default=True)
+TRYON_ABANDONMENT_SECONDS = env.int("TRYON_ABANDONMENT_SECONDS", default=86400)
+
+SITE_URL = env("SITE_URL", default="http://localhost:3000")
 
 # AI stylist chat (Groq — OpenAI-compatible API)
 GROQ_API_KEY = env("GROQ_API_KEY", default="").strip()
@@ -283,6 +289,10 @@ CELERY_BEAT_SCHEDULE = {
     "purge-old-notifications": {
         "task": "apps.notifications.tasks.purge_old_notifications_task",
         "schedule": crontab(hour=4, minute=0, day_of_week="sun"),
+    },
+    "tryon-abandonment-followups": {
+        "task": "apps.tryon.tasks.send_tryon_abandonment_followups_task",
+        "schedule": crontab(minute=0),
     },
 }
 

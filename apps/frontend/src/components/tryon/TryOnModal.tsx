@@ -125,7 +125,7 @@ export function TryOnModal({ open, onClose, product }: TryOnModalProps) {
 
   async function handleStartTryOn() {
     if (!user) {
-      router.push(`/auth/login?next=/products/${product.slug}`);
+      router.push(`/login?redirect=/products/${product.slug}`);
       return;
     }
     if (!photo || !consent) return;
@@ -458,7 +458,7 @@ export function TryOnModal({ open, onClose, product }: TryOnModalProps) {
                 fullWidth
                 size="lg"
                 onClick={() =>
-                  router.push(`/auth/login?next=/products/${product.slug}`)
+                  router.push(`/login?redirect=/products/${product.slug}`)
                 }
               >
                 Sign in to begin
