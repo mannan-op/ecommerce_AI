@@ -200,8 +200,7 @@ By default the store runs in **Demo Payment Mode** — no Stripe API key require
 
 | Variable | App | Default | Description |
 |----------|-----|---------|-------------|
-| `DEFAULT_PAYMENT_PROVIDER` | Django | `demo` | Backend payment provider |
-| `NEXT_PUBLIC_PAYMENT_PROVIDER` | Next.js | `demo` | Frontend checkout UI |
+| `DEFAULT_PAYMENT_PROVIDER` | Django | `demo` | Backend payment provider (server-side only) |
 | `PAYMENT_CURRENCY` | Django | `usd` | Checkout currency |
 
 **Checkout flow (demo):**
@@ -210,48 +209,33 @@ By default the store runs in **Demo Payment Mode** — no Stripe API key require
 3. `POST /api/orders/payments/confirm/` marks payment as paid, reduces stock, clears cart, sends confirmation email (console backend in dev)
 4. Redirect to `/orders/{id}?confirmed=1`
 
-**Switch to Stripe later:** set both provider env vars to `stripe` and add `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`. The checkout wizard and payment factory are provider-agnostic.
-
 Public config endpoint: `GET /api/orders/payments/config/`
 
-## Feature checklist (Phase 1)
+## Features
 
-| Feature | Status |
-|---------|--------|
-| Login / Register / Logout / JWT refresh | ✅ Complete |
-| httpOnly cookie auth (Next.js proxy) | ✅ Complete |
-| Guest cart (localStorage + session) | ✅ Complete |
-| Guest cart merge on login/register | ✅ Complete |
-| Product listing, detail, categories | ✅ Complete |
-| Search, fabric/color/size/price filters | ✅ Complete |
-| Pagination (shop) | ✅ Complete |
-| Cart add/update/remove/clear | ✅ Complete |
-| Stock validation (cart + checkout) | ✅ Complete |
-| Multi-step checkout | ✅ Complete |
-| Address validation + saved addresses | ✅ Complete |
-| Demo payment (full pipeline) | ✅ Complete |
-| Order creation + confirmation page | ✅ Complete |
-| Order history | ✅ Complete |
-| Confirmation email (console/SMTP) | ✅ Complete |
-| Inventory reduction on payment | ✅ Complete |
-| Admin catalog panel (`/admin`) | ✅ Complete |
-| Responsive layouts | ✅ Complete |
-| Loading / empty / error states | ✅ Complete |
-| 404 + error pages | ✅ Complete |
-| SEO metadata (all main pages) | ✅ Complete |
-| Standardized API errors | ✅ Complete |
-| Rate limiting | ✅ Complete |
-| Coupons | ❌ Not implemented |
-| Password reset email flow | ❌ Stub only |
-| Stripe live payments | ⏳ Requires Stripe keys |
-| PayFast / JazzCash | ⏳ Stubs only |
-| Stripe webhooks | ⏳ Not implemented |
-| Category page pagination | ❌ Not implemented |
-| Mobile hamburger nav | ❌ Not implemented |
-| Frontend unit tests | ❌ Not implemented |
-| Address book CRUD UI | ❌ API only |
+**Store & checkout**
+- Login, register, logout, JWT refresh (httpOnly cookie auth via Next.js proxy)
+- Guest cart (localStorage + session) with merge on login/register
+- Product listing, detail, categories, search, filters, shop pagination
+- Cart, stock validation, multi-step checkout, saved addresses
+- Demo payment pipeline, order history, confirmation email, inventory reduction
+- Responsive layouts, loading/empty/error states, 404 pages, SEO metadata
+- Standardized API errors and rate limiting
 
-**Verification (latest audit):** 29 backend tests passing, ESLint clean, `next build` succeeds with zero TypeScript errors.
+**Admin (`/admin`)**
+- Products, variants, images, categories
+- Stylist try-on queue (`/admin/tryon`)
+
+**Virtual try-on**
+- Upload photo, AI preview (Hugging Face, Fal, Replicate, or demo overlay)
+- Celery async processing, stylist CSR handoff, Groq AI stylist chat
+- Photo consent and retention purge (Celery Beat)
+
+**Notifications**
+- In-app bell + `/notifications` inbox
+- Order, payment, try-on, and CSR events
+
+**Verification:** backend tests, ESLint, and `next build` run in CI.
 
 ## Virtual try-on (Phase 2)
 
@@ -319,26 +303,7 @@ docker compose exec backend python -c "import urllib.request,json; print(json.lo
 
 **Privacy:** User photos are stored in media (`tryon/user-photos/`). Set `S3_PRIVATE_MEDIA=true` in production. Photos are purged after `TRYON_PHOTO_RETENTION_DAYS` via Celery Beat.
 
-## Feature checklist (Phase 2)
-
-| Feature | Status |
-|---------|--------|
-| Try-on job API (upload, poll, list) | ✅ Complete |
-| Demo try-on provider (no API key) | ✅ Complete |
-| Hugging Face IDM-VTON provider | ✅ Complete (requires HF_TOKEN) |
-| Fal.ai FASHN v1.6 provider | ✅ Complete (requires FAL_KEY) |
-| Replicate IDM-VTON provider | ✅ Complete (requires token) |
-| Celery async processing | ✅ Complete |
-| Product page try-on UI | ✅ Complete |
-| CSR stylist handoff | ✅ Complete |
-| Admin stylist queue | ✅ Complete |
-| Photo consent + retention setting | ✅ Complete |
-| In-app notifications (bell + inbox) | ✅ Complete |
-| Groq AI stylist chat | ✅ Complete |
-| Celery Beat (photo + notification purge) | ✅ Complete |
-| Push notifications (browser/mobile) | ❌ Future |
-
-## Notifications (Phase 3)
+## Notifications
 
 Signed-in customers see a **bell icon** in the navbar. Notifications poll every ~45 seconds and on window focus.
 
@@ -374,10 +339,9 @@ Signed-in customers see a **bell icon** in the navbar. Notifications poll every 
 | `GET /api/cart/` | Cart (user or session) |
 | `POST /api/cart/items/` | Add variant to cart |
 | `POST /api/orders/checkout/` | Create order + payment intent |
-| `POST /api/orders/payments/confirm/` | Confirm payment (demo or Stripe) |
+| `POST /api/orders/payments/confirm/` | Confirm payment (demo) |
 | `GET /api/orders/payments/config/` | Active payment provider config |
 | `GET /api/health/` | Liveness/readiness (DB + Redis) |
-| `POST /api/webhooks/stripe/` | Stripe payment webhooks (when using Stripe) |
 | `GET /api/notifications/` | List in-app notifications |
 | `GET /api/notifications/unread-count/` | Unread badge count |
 | `POST /api/tryon/jobs/` | Create virtual try-on job (multipart) |
