@@ -1,7 +1,16 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import type { Category } from "@/lib/api/types";
+
+const CATEGORY_IMAGES: Record<string, string> = {
+  kurta: "/images/categories/kurta.png",
+  "lawn-suits": "/images/categories/lawn-suits.png",
+  "unstitched-fabric": "/images/categories/unstitched-fabric.png",
+  "shawls-dupattas": "/images/categories/shawls-dupattas.png",
+  "mens-wear": "/images/categories/mens-wear.png",
+};
 
 interface FeaturedCollectionsProps {
   categories: Category[];
@@ -24,7 +33,19 @@ export function FeaturedCollections({ categories }: FeaturedCollectionsProps) {
                 href={`/categories/${cat.slug}`}
                 className="group relative block overflow-hidden rounded-3xl bg-surface-elevated shadow-soft transition-all duration-500 hover:-translate-y-1 hover:shadow-elevated"
               >
-                <div className="aspect-[4/5] bg-gradient-to-br from-accent-soft/80 via-surface to-secondary/10 transition-transform duration-700 group-hover:scale-105" />
+                <div className="relative aspect-[4/5] overflow-hidden">
+                  {CATEGORY_IMAGES[cat.slug] ? (
+                    <Image
+                      src={CATEGORY_IMAGES[cat.slug]}
+                      alt={cat.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-accent-soft/80 via-surface to-secondary/10" />
+                  )}
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/60 via-primary/10 to-transparent" />
                 <div className="absolute bottom-0 p-6">
                   <span className="text-xs uppercase tracking-widest text-accent">

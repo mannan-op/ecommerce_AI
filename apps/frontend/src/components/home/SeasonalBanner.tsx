@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { Reveal } from "@/components/motion/Reveal";
@@ -9,7 +10,14 @@ export function SeasonalBanner() {
       <div className="container-luxury">
         <Reveal>
           <div className="relative overflow-hidden rounded-[2rem] bg-primary px-8 py-16 text-background lg:px-16 lg:py-20">
-            <div className="absolute inset-0 bg-gradient-to-r from-accent/25 via-transparent to-secondary/20" />
+            <Image
+              src="/images/marketing/seasonal-banner.png"
+              alt="Magenta embroidered lawn suit"
+              fill
+              sizes="100vw"
+              className="object-cover object-center opacity-35"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/70 to-primary/40" />
             <div className="relative z-10 max-w-xl">
               <p className="text-xs uppercase tracking-[0.3em] text-accent">
                 Seasonal edit

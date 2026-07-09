@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { Reveal } from "@/components/motion/Reveal";
 
 export function BrandStory() {
@@ -5,7 +7,15 @@ export function BrandStory() {
     <section id="story" className="border-y border-border bg-surface-elevated/50 py-20 lg:py-28">
       <div className="container-luxury grid items-center gap-12 lg:grid-cols-2">
         <Reveal>
-          <div className="aspect-[4/5] overflow-hidden rounded-[2rem] bg-gradient-to-br from-accent-soft via-surface to-secondary/10 shadow-elevated" />
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] shadow-elevated">
+            <Image
+              src="/images/marketing/brand-story.png"
+              alt="Chocolate brown embroidered lawn suit"
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover object-top"
+            />
+          </div>
         </Reveal>
         <Reveal delay={0.1} direction="right">
           <p className="text-xs uppercase tracking-[0.3em] text-accent">Our story</p>

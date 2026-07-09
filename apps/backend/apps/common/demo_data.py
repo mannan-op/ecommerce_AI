@@ -174,6 +174,22 @@ DEMO_PRODUCTS = [
     },
 ]
 
+# Maps demo product slugs to files under apps/backend/seed_assets/products/
+DEMO_PRODUCT_IMAGES: dict[str, str] = {
+    "embroidered-cotton-kurta": "olive-gharara.png",
+    "linen-summer-kurta": "green-lawn.png",
+    "floral-lawn-3-piece": "mauve-festive.png",
+    "embroidered-lawn-suit": "magenta-lawn.png",
+    "premium-lawn-yardage": "green-lawn.png",
+    "khaddar-winter-collection": "chocolate-brown.png",
+    "chiffon-embroidered-dupatta": "mauve-festive.png",
+    "pashmina-shawl": "chocolate-brown.png",
+    "classic-shalwar-kameez": "black-silk.png",
+    "waistcoat-velvet": "black-silk.png",
+    "silk-festive-kurta": "black-silk.png",
+    "sale-lawn-basic": "green-lawn.png",
+}
+
 DEMO_USERS = [
     {
         "email": "demo@example.com",

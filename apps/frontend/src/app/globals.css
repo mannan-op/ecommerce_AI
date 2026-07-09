@@ -101,6 +101,22 @@
     transform-style: preserve-3d;
   }
 
+  @keyframes navigation-progress {
+    0% {
+      transform: scaleX(0.08);
+    }
+    50% {
+      transform: scaleX(0.55);
+    }
+    100% {
+      transform: scaleX(0.92);
+    }
+  }
+
+  .animate-navigation-progress {
+    animation: navigation-progress 2.5s ease-in-out infinite;
+  }
+
   .tryon-image-canvas {
     background-color: hsl(var(--surface-elevated));
     background-image:

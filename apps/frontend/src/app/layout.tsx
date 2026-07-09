@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
+import { Suspense } from "react";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { NavigationProgress } from "@/components/ui/NavigationProgress";
 import { serverApi } from "@/lib/api/server";
 
 import "./globals.css";
@@ -35,6 +38,12 @@ export const metadata: Metadata = {
     "Premium Pakistani luxury fashion — curated collections, artisanal fabrics, and timeless design.",
 };
 
+const getCachedCategories = unstable_cache(
+  () => serverApi.getCategories(),
+  ["catalog-categories"],
+  { revalidate: 300 }
+);
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -42,7 +51,7 @@ export default async function RootLayout({
 }>) {
   let categories: Awaited<ReturnType<typeof serverApi.getCategories>> = [];
   try {
-    categories = await serverApi.getCategories();
+    categories = await getCachedCategories();
   } catch {
     // API offline
   }
@@ -54,6 +63,9 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider>
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <AppShell categories={categories}>{children}</AppShell>
         </ThemeProvider>
       </body>

@@ -1,5 +1,6 @@
 from decimal import Decimal
 from io import BytesIO
+from pathlib import Path
 
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
@@ -8,7 +9,14 @@ from PIL import Image, ImageDraw
 
 from apps.accounts.models import Address, User
 from apps.catalog.models import Category, Product, ProductImage, ProductVariant
-from apps.common.demo_data import DEMO_CATEGORIES, DEMO_PRODUCTS, DEMO_USERS
+from apps.common.demo_data import (
+    DEMO_CATEGORIES,
+    DEMO_PRODUCT_IMAGES,
+    DEMO_PRODUCTS,
+    DEMO_USERS,
+)
+
+SEED_ASSETS_DIR = Path(__file__).resolve().parents[4] / "seed_assets" / "products"
 
 
 def _placeholder_image(name: str, color: tuple[int, int, int]) -> ContentFile:
@@ -24,6 +32,17 @@ def _placeholder_image(name: str, color: tuple[int, int, int]) -> ContentFile:
     return ContentFile(buffer.getvalue(), name=filename)
 
 
+def _seed_asset_image(slug: str, product_name: str) -> ContentFile | None:
+    filename = DEMO_PRODUCT_IMAGES.get(slug)
+    if not filename:
+        return None
+    path = SEED_ASSETS_DIR / filename
+    if not path.is_file():
+        return None
+    stem = slug.replace("-", "_")
+    return ContentFile(path.read_bytes(), name=f"{stem}.jpg")
+
+
 class Command(BaseCommand):
     help = "Load demo categories, products, variants, images, and test users."
 
@@ -34,13 +53,22 @@ class Command(BaseCommand):
             help="Delete existing demo catalog data and demo users before seeding.",
         )
 
+        parser.add_argument(
+            "--replace-images",
+            action="store_true",
+            help="Replace existing demo product images with seed_assets photos.",
+        )
+
     @transaction.atomic
     def handle(self, *args, **options):
         if options["clear"]:
             self._clear_demo_data()
 
         categories = self._seed_categories()
-        product_count, variant_count = self._seed_products(categories)
+        product_count, variant_count = self._seed_products(
+            categories,
+            replace_images=options["replace_images"],
+        )
         user_count, address_count = self._seed_users()
 
         self.stdout.write(self.style.SUCCESS("Demo data loaded successfully."))
@@ -83,7 +111,12 @@ class Command(BaseCommand):
             categories[data["slug"]] = category
         return categories
 
-    def _seed_products(self, categories: dict[str, Category]) -> tuple[int, int]:
+    def _seed_products(
+        self,
+        categories: dict[str, Category],
+        *,
+        replace_images: bool,
+    ) -> tuple[int, int]:
         product_count = 0
         variant_count = 0
 
@@ -100,8 +133,15 @@ class Command(BaseCommand):
             if created:
                 product_count += 1
 
-            if not product.images.exists():
-                image_file = _placeholder_image(data["name"], data["image_color"])
+            should_seed_image = (
+                not product.images.exists() or replace_images
+            )
+            if should_seed_image:
+                image_file = _seed_asset_image(data["slug"], data["name"])
+                if image_file is None:
+                    image_file = _placeholder_image(data["name"], data["image_color"])
+                if product.images.exists():
+                    product.images.all().delete()
                 ProductImage.objects.create(
                     product=product,
                     image=image_file,

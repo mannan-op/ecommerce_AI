@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useMotionValue, useSpring } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
@@ -65,8 +66,17 @@ export function HeroSection() {
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               className="relative z-10 overflow-hidden rounded-[2rem] border border-border/50 bg-surface shadow-elevated"
             >
-              <div className="aspect-[4/5] bg-gradient-to-br from-accent-soft via-surface-elevated to-secondary/20" />
-              <div className="absolute inset-0 bg-gradient-to-t from-primary/30 to-transparent" />
+              <div className="relative aspect-[4/5]">
+                <Image
+                  src="/images/marketing/hero.png"
+                  alt="Embellished mauve lawn suit with pink dupatta"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover object-top"
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/50 via-primary/10 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
                 <p className="font-display text-2xl text-background">
                   The Artisan Edit
